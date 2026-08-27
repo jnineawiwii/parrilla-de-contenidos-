@@ -1,0 +1,115 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ 'Editar' if user else 'Nuevo' }} Usuario - RTP CMS{% endblock %}
+
+{% block content %}
+<h2>
+    <i class="bi bi-person-{% if user %}gear{% else %}plus{% endif %} text-success"></i>
+    {{ 'Editar' if user else 'Nuevo' }} Usuario
+</h2>
+
+<form method="POST">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Nombre de Usuario <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="username" 
+                                       value="{{ user.username if user else '' }}" required 
+                                       {% if user %}readonly{% endif %}>
+                                {% if user %}
+                                <small class="text-muted">El nombre de usuario no se puede cambiar</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Correo Electrónico <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" name="email" 
+                                       value="{{ user.email if user else '' }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre Completo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="full_name" 
+                               value="{{ user.full_name if user else '' }}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Rol</label>
+                                <select class="form-select" name="role">
+                                    {% for role in roles %}
+                                    <option value="{{ role }}" {% if user and user.role == role %}selected{% endif %}>
+                                        {{ role|capitalize }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted">
+                                    admin: Acceso total | supervisor: Gestión de publicaciones | editor: Creación de contenido
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Estado</label>
+                                <select class="form-select" name="is_active">
+                                    <option value="on" {% if user and user.is_active %}selected{% endif %}>Activo</option>
+                                    <option value="off" {% if user and not user.is_active %}selected{% endif %}>Inactivo</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            {% if user %}Nueva Contraseña (dejar en blanco para mantener){% else %}Contraseña <span class="text-danger">*</span>{% endif %}
+                        </label>
+                        <input type="password" class="form-control" name="{% if user %}new_password{% else %}password{% endif %}" 
+                               {% if not user %}required{% endif %} minlength="6">
+                        <small class="text-muted">Mínimo 6 caracteres</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save"></i> Guardar Usuario
+                        </button>
+                        <a href="{{ url_for('users') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            {% if user %}
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <i class="bi bi-info-circle"></i> Información
+                </div>
+                <div class="card-body small">
+                    <p><strong>Creado:</strong> {{ user.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                    {% if user.last_login %}
+                    <p><strong>Último acceso:</strong> {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}</p>
+                    {% endif %}
+                    <p><strong>ID:</strong> {{ user.user_id }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+{% endblock %}

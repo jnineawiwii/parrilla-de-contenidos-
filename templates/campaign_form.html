@@ -1,0 +1,116 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ 'Editar' if campaign else 'Nueva' }} Campaña - RTP CMS{% endblock %}
+
+{% block content %}
+<h2>
+    <i class="bi bi-tags text-success"></i>
+    {{ 'Editar' if campaign else 'Nueva' }} Campaña
+</h2>
+
+<form method="POST">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Nombre de la Campaña <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" name="campaign_name" 
+                               value="{{ campaign.campaign_name if campaign else '' }}" required>
+                        <small class="text-muted">Ej: RTP_siempre_contigo, RTP_avanza, A_su_servicio</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Descripción</label>
+                        <textarea class="form-control" name="description" rows="3">{{ campaign.description if campaign else '' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Objetivo</label>
+                        <textarea class="form-control" name="objective" rows="3">{{ campaign.objective if campaign else '' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Público Objetivo</label>
+                        <textarea class="form-control" name="target_audience" rows="2">{{ campaign.target_audience if campaign else '' }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Programa de Gobierno</label>
+                                <input type="text" class="form-control" name="government_program" 
+                                       value="{{ campaign.government_program if campaign else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Eje del Programa</label>
+                                <input type="text" class="form-control" name="government_axis" 
+                                       value="{{ campaign.government_axis if campaign else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Color de identificación</label>
+                        <div class="input-group">
+                            <input type="color" class="form-control form-control-color" name="color" 
+                                   value="{{ campaign.color if campaign else '#28a745' }}" style="max-width: 60px;">
+                            <input type="text" class="form-control" name="color_text" 
+                                   value="{{ campaign.color if campaign else '#28a745' }}" 
+                                   id="colorText" onchange="document.querySelector('input[name=color]').value=this.value">
+                        </div>
+                        <small class="text-muted">Color que identificará a esta campaña</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="isActive" 
+                                   {% if campaign and campaign.is_active %}checked{% else %}checked{% endif %}>
+                            <label class="form-check-label" for="isActive">Campaña Activa</label>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save"></i> Guardar Campaña
+                        </button>
+                        <a href="{{ url_for('campaigns') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            {% if campaign %}
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <i class="bi bi-info-circle"></i> Información
+                </div>
+                <div class="card-body small">
+                    <p><strong>Creada:</strong> {{ campaign.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                    <p><strong>Publicaciones:</strong> {{ campaign.publications|length }}</p>
+                    <p><strong>ID:</strong> {{ campaign.campaign_id }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+
+<script>
+// Sincronizar campos de color
+document.querySelector('input[name=color]').addEventListener('input', function() {
+    document.getElementById('colorText').value = this.value;
+});
+</script>
+{% endblock %}

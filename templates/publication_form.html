@@ -1,0 +1,552 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ 'Editar' if publication else 'Nueva' }} Publicación - RTP CMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .form-section .section-title {
+        font-weight: 600;
+        color: #28a745;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #28a745;
+        padding-bottom: 8px;
+    }
+    .required:after {
+        content: " *";
+        color: red;
+    }
+    .copy-card {
+        transition: all 0.3s ease;
+    }
+    .copy-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .copy-card textarea {
+        font-size: 0.85rem;
+        resize: vertical;
+        min-height: 80px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">
+    <i class="bi bi-{% if publication %}pencil-square{% else %}plus-circle{% endif %} text-success"></i>
+    {{ 'Editar' if publication else 'Nueva' }} Publicación
+</h2>
+
+<form method="POST" enctype="multipart/form-data" id="publicationForm">
+    <div class="row">
+        <!-- Columna Principal -->
+        <div class="col-lg-8">
+            <!-- Información General -->
+            <div class="form-section">
+                <div class="section-title"><i class="bi bi-info-circle"></i> Información General</div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold required">Título</label>
+                    <input type="text" class="form-control" name="title" 
+                           value="{{ publication.title if publication else '' }}" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold required">Fecha de Publicación</label>
+                    <input type="datetime-local" class="form-control" name="publication_date" required
+                           value="{{ publication.publication_date.strftime('%Y-%m-%dT%H:%M') if publication else '' }}">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Descripción</label>
+                    <textarea class="form-control" name="description" rows="2">{{ publication.description if publication else '' }}</textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Copy (Texto de la publicación)</label>
+                    <textarea class="form-control" name="copy_text" rows="4" id="copyText">{{ publication.copy_text if publication else '' }}</textarea>
+                    <div class="mt-1 text-end">
+                        <small class="text-muted" id="charCount">0 caracteres</small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Generar Copy con IA -->
+            <div class="form-section">
+                <div class="section-title"><i class="bi bi-robot"></i> Generar Copy con IA</div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Descripción para el Copy</label>
+                    <textarea class="form-control" id="aiDescription" rows="3" 
+                              placeholder="Describe qué quieres comunicar en la publicación..."></textarea>
+                    <div class="mt-2">
+                        <button type="button" class="btn btn-primary" onclick="generateCopy()" id="generateBtn">
+                            <i class="bi bi-magic"></i> Generar Copy con IA
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="clearCopys()">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar
+                        </button>
+                        <span class="text-muted ms-2 small" id="aiStatus">Listo</span>
+                        <span class="ms-2" id="aiSpinner" style="display:none;">
+                            <span class="spinner-border spinner-border-sm text-success" role="status"></span>
+                            Generando...
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="row" id="copyResults" style="display: none;">
+                    <div class="col-md-4 mb-2">
+                        <div class="card copy-card border-primary h-100">
+                            <div class="card-header bg-primary text-white small py-1">Twitter/X</div>
+                            <div class="card-body p-2">
+                                <textarea class="form-control form-control-sm" id="copyVersion1" rows="3" 
+                                          style="font-size: 0.8rem; min-height: 80px;"></textarea>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-1 w-100" onclick="useCopy('copyVersion1')">
+                                    <i class="bi bi-check"></i> Usar este copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <div class="card copy-card border-success h-100">
+                            <div class="card-header bg-success text-white small py-1">Facebook/Instagram</div>
+                            <div class="card-body p-2">
+                                <textarea class="form-control form-control-sm" id="copyVersion2" rows="3" 
+                                          style="font-size: 0.8rem; min-height: 80px;"></textarea>
+                                <button type="button" class="btn btn-sm btn-outline-success mt-1 w-100" onclick="useCopy('copyVersion2')">
+                                    <i class="bi bi-check"></i> Usar este copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <div class="card copy-card border-warning h-100">
+                            <div class="card-header bg-warning text-dark small py-1">Instagram/Reels</div>
+                            <div class="card-body p-2">
+                                <textarea class="form-control form-control-sm" id="copyVersion3" rows="3" 
+                                          style="font-size: 0.8rem; min-height: 80px;"></textarea>
+                                <button type="button" class="btn btn-sm btn-outline-warning mt-1 w-100" onclick="useCopy('copyVersion3')">
+                                    <i class="bi bi-check"></i> Usar este copy
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Clasificación -->
+            <div class="form-section">
+                <div class="section-title"><i class="bi bi-tags"></i> Clasificación</div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Campaña</label>
+                        <select class="form-select" name="campaign_id" id="campaignSelect">
+                            <option value="">Sin campaña</option>
+                            {% for campaign in campaigns %}
+                            <option value="{{ campaign.campaign_id }}" 
+                                    data-color="{{ campaign.color }}"
+                                    {% if publication and publication.campaign_id == campaign.campaign_id %}selected{% endif %}>
+                                {{ campaign.campaign_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Tema</label>
+                        <select class="form-select" name="theme_id" id="themeSelect">
+                            <option value="">Seleccionar</option>
+                            {% for theme in themes %}
+                            <option value="{{ theme.theme_id }}" 
+                                    data-campaign="{{ theme.campaign_id }}"
+                                    {% if publication and publication.theme_id == theme.theme_id %}selected{% endif %}>
+                                {{ theme.theme_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label fw-bold">Subtema</label>
+                        <select class="form-select" name="subtheme_id" id="subthemeSelect">
+                            <option value="">Seleccionar</option>
+                            {% for subtheme in subthemes %}
+                            <option value="{{ subtheme.subtheme_id }}" 
+                                    data-theme="{{ subtheme.theme_id }}"
+                                    {% if publication and publication.subtheme_id == subtheme.subtheme_id %}selected{% endif %}>
+                                {{ subtheme.subtheme_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Formato de Contenido</label>
+                        <select class="form-select" name="content_format_id">
+                            <option value="">Seleccionar</option>
+                            {% for format in formats %}
+                            <option value="{{ format.format_id }}"
+                                    {% if publication and publication.content_format_id == format.format_id %}selected{% endif %}>
+                                {{ format.format_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Archivo Adjunto</label>
+                        <input type="file" class="form-control" name="file_attachment">
+                        {% if publication and publication.file_path %}
+                        <small class="text-muted">Archivo actual: {{ publication.file_path }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Plataformas -->
+            <div class="form-section">
+                <div class="section-title"><i class="bi bi-share"></i> Plataformas de Publicación</div>
+                <div class="row">
+                    {% for platform in platforms %}
+                    <div class="col-md-3 col-sm-4 col-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="platforms" 
+                                   value="{{ platform.platform_id }}"
+                                   id="platform_{{ platform.platform_id }}"
+                                   {% if selected_platforms and platform.platform_id in selected_platforms %}checked{% endif %}>
+                            <label class="form-check-label" for="platform_{{ platform.platform_id }}">
+                                <span class="badge" style="background-color: {{ platform.color or '#6c757d' }}; color: white;">
+                                    {% if platform.icon %}<i class="bi {{ platform.icon }}"></i> {% endif %}
+                                    {{ platform.platform_name }}
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Columna Lateral -->
+        <div class="col-lg-4">
+            <!-- Equipo Responsable -->
+            <div class="form-section">
+                <div class="section-title"><i class="bi bi-people"></i> Equipo Responsable</div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Responsable</label>
+                    <select class="form-select" name="responsible_user_id">
+                        <option value="">Sin asignar</option>
+                        {% for user in users %}
+                        <option value="{{ user.user_id }}"
+                                {% if publication and publication.responsible_user_id == user.user_id %}selected{% endif %}>
+                            {{ user.full_name }} ({{ user.role }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Producción</label>
+                    <select class="form-select" name="production_user_id">
+                        <option value="">Sin asignar</option>
+                        {% for user in users %}
+                        <option value="{{ user.user_id }}"
+                                {% if publication and publication.production_user_id == user.user_id %}selected{% endif %}>
+                            {{ user.full_name }} ({{ user.role }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Postproducción</label>
+                    <select class="form-select" name="postproduction_user_id">
+                        <option value="">Sin asignar</option>
+                        {% for user in users %}
+                        <option value="{{ user.user_id }}"
+                                {% if publication and publication.postproduction_user_id == user.user_id %}selected{% endif %}>
+                            {{ user.full_name }} ({{ user.role }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Estado y Notas -->
+            <div class="form-section">
+                <div class="section-title"><i class="bi bi-check-circle"></i> Estado</div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Estado de la Publicación</label>
+                    <select class="form-select" name="status">
+                        <option value="Draft" {% if publication and publication.status == 'Draft' %}selected{% endif %}>Borrador</option>
+                        <option value="In_Review" {% if publication and publication.status == 'In_Review' %}selected{% endif %}>En Revisión</option>
+                        <option value="Approved" {% if publication and publication.status == 'Approved' %}selected{% endif %}>Aprobado</option>
+                        <option value="Published" {% if publication and publication.status == 'Published' %}selected{% endif %}>Publicado</option>
+                        <option value="Cancelled" {% if publication and publication.status == 'Cancelled' %}selected{% endif %}>Cancelado</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Notas / Observaciones</label>
+                    <textarea class="form-control" name="notes" rows="3">{{ publication.notes if publication else '' }}</textarea>
+                </div>
+            </div>
+            
+            <!-- Acciones -->
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success btn-lg">
+                    <i class="bi bi-save"></i> Guardar Publicación
+                </button>
+                {% if publication %}
+                <button type="submit" name="save_and_publish" value="1" class="btn btn-primary">
+                    <i class="bi bi-rocket"></i> Guardar y Publicar
+                </button>
+                {% endif %}
+                <a href="{{ url_for('publications') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Cancelar
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+// ============================================
+// CONTADOR DE CARACTERES
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    const textarea = document.getElementById('copyText');
+    const counter = document.getElementById('charCount');
+    
+    if (textarea && counter) {
+        function updateCount() {
+            counter.textContent = textarea.value.length + ' caracteres';
+        }
+        updateCount();
+        textarea.addEventListener('input', updateCount);
+    }
+});
+
+// ============================================
+// FILTRADO DE TEMAS Y SUBTEMAS
+// ============================================
+document.addEventListener('DOMContentLoaded', function() {
+    const campaignSelect = document.getElementById('campaignSelect');
+    const themeSelect = document.getElementById('themeSelect');
+    const subthemeSelect = document.getElementById('subthemeSelect');
+    
+    if (campaignSelect) {
+        campaignSelect.addEventListener('change', function() {
+            const campaignId = this.value;
+            
+            for (let option of themeSelect.options) {
+                if (option.value === '') continue;
+                option.style.display = (option.dataset.campaign == campaignId || campaignId === '') ? '' : 'none';
+            }
+            themeSelect.value = '';
+            subthemeSelect.innerHTML = '<option value="">Seleccionar</option>';
+            
+            const selected = this.options[this.selectedIndex];
+            if (selected && selected.dataset.color) {
+                this.style.borderColor = selected.dataset.color;
+                this.style.borderWidth = '2px';
+            } else {
+                this.style.borderColor = '';
+                this.style.borderWidth = '';
+            }
+        });
+    }
+    
+    if (themeSelect) {
+        themeSelect.addEventListener('change', function() {
+            const themeId = this.value;
+            subthemeSelect.innerHTML = '<option value="">Seleccionar</option>';
+            if (themeId) {
+                for (let option of subthemeSelect.options) {
+                    if (option.value === '') continue;
+                    if (option.dataset.theme == themeId) {
+                        option.style.display = '';
+                        subthemeSelect.appendChild(option);
+                    }
+                }
+            }
+        });
+    }
+    
+    {% if publication and publication.campaign_id %}
+    if (campaignSelect) {
+        campaignSelect.dispatchEvent(new Event('change'));
+        setTimeout(function() {
+            themeSelect.value = {{ publication.theme_id|default('null') }};
+            themeSelect.dispatchEvent(new Event('change'));
+        }, 100);
+    }
+    {% endif%}
+});
+
+// ============================================
+// GENERAR COPY CON IA
+// ============================================
+function generateCopy() {
+    const description = document.getElementById('aiDescription').value.trim();
+    const status = document.getElementById('aiStatus');
+    const spinner = document.getElementById('aiSpinner');
+    const btn = document.getElementById('generateBtn');
+    
+    if (!description) {
+        showToast('Por favor, escribe una descripción para generar el copy.', 'warning');
+        return;
+    }
+    
+    // Mostrar estado de carga
+    btn.disabled = true;
+    status.innerHTML = '';
+    spinner.style.display = 'inline-block';
+    document.getElementById('copyResults').style.display = 'none';
+    
+    // Obtener campaña seleccionada
+    const campaignSelect = document.getElementById('campaignSelect');
+    const campaignName = campaignSelect.options[campaignSelect.selectedIndex]?.text || '';
+    
+    fetch('/api/generate_copy', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            description: description,
+            campaign: campaignName,
+            tone: 'profesional, cercano y positivo'
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        spinner.style.display = 'none';
+        if (data.success) {
+            document.getElementById('copyVersion1').value = data.copys.version1 || '';
+            document.getElementById('copyVersion2').value = data.copys.version2 || '';
+            document.getElementById('copyVersion3').value = data.copys.version3 || '';
+            document.getElementById('copyResults').style.display = 'flex';
+            status.innerHTML = '<span class="text-success"><i class="bi bi-check-circle"></i> Copy generado!</span>';
+            showToast('¡Copy generado con éxito!', 'success');
+        } else {
+            status.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Error: ' + data.message + '</span>';
+            showToast('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        spinner.style.display = 'none';
+        status.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Error al generar</span>';
+        showToast('Error al generar el copy. Verifica la conexión.', 'danger');
+    })
+    .finally(() => {
+        btn.disabled = false;
+    });
+}
+
+// ============================================
+// USAR COPY SELECCIONADO
+// ============================================
+function useCopy(elementId) {
+    const copyText = document.getElementById(elementId).value;
+    if (!copyText) {
+        showToast('No hay copy para usar.', 'warning');
+        return;
+    }
+    
+    const currentCopy = document.getElementById('copyText');
+    if (currentCopy.value && !confirm('¿Reemplazar el copy actual o agregar al final?')) {
+        currentCopy.value = currentCopy.value + '\n\n' + copyText;
+    } else {
+        currentCopy.value = copyText;
+    }
+    
+    // Actualizar contador de caracteres
+    const counter = document.getElementById('charCount');
+    if (counter) {
+        counter.textContent = currentCopy.value.length + ' caracteres';
+    }
+    
+    // Scroll al campo de copy
+    currentCopy.focus();
+    currentCopy.scrollIntoView({ behavior: 'smooth' });
+    
+    showToast('Copy agregado al campo de texto', 'success');
+}
+
+// ============================================
+// LIMPIAR COPYS GENERADOS
+// ============================================
+function clearCopys() {
+    document.getElementById('copyVersion1').value = '';
+    document.getElementById('copyVersion2').value = '';
+    document.getElementById('copyVersion3').value = '';
+    document.getElementById('copyResults').style.display = 'none';
+    document.getElementById('aiDescription').value = '';
+    document.getElementById('aiStatus').innerHTML = 'Listo';
+    document.getElementById('aiSpinner').style.display = 'none';
+}
+
+// ============================================
+// TOAST NOTIFICATIONS
+// ============================================
+function showToast(message, type) {
+    const colors = {
+        success: '#78BE20',
+        danger: '#9F2241',
+        warning: '#FDC60A',
+        info: '#73CAE6'
+    };
+    
+    const icons = {
+        success: 'check-circle',
+        danger: 'exclamation-triangle',
+        warning: 'exclamation-circle',
+        info: 'info-circle'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white border-0';
+    toast.style.backgroundColor = colors[type] || colors.info;
+    toast.style.position = 'fixed';
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.style.minWidth = '300px';
+    toast.style.boxShadow = '0 8px 25px rgba(0,0,0,0.2)';
+    toast.style.borderRadius = '10px';
+    toast.style.padding = '12px 16px';
+    toast.style.animation = 'slideDown 0.3s ease-in';
+    
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi bi-${icons[type] || 'info-circle'} me-2 fs-5"></i>
+            <span>${message}</span>
+            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto cerrar después de 4 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+    
+    // Cerrar al hacer clic
+    toast.querySelector('.btn-close').addEventListener('click', function() {
+        toast.remove();
+    });
+}
+</script>
+{% endblock %}

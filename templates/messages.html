@@ -1,0 +1,164 @@
+{% extends "layout.html" %}
+
+{% block title %}Mensajes - RTP CMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-envelope text-success"></i> {{ title|default('Mensajes') }}</h2>
+    <a href="{{ url_for('send_message') }}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nuevo Mensaje
+    </a>
+</div>
+
+<div class="row">
+    <!-- Panel lateral -->
+    <div class="col-lg-3 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('messages') }}" class="btn {% if current_tab != 'sent' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        <i class="bi bi-inbox"></i> Recibidos
+                        {% if unread_count > 0 %}
+                        <span class="badge bg-danger ms-2">{{ unread_count }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{{ url_for('messages') }}?tab=sent" class="btn {% if current_tab == 'sent' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        <i class="bi bi-send"></i> Enviados
+                    </a>
+                </div>
+                <hr>
+                <h6 class="text-muted">Usuarios</h6>
+                <div class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                    {% for user in users[:10] %}
+                    <a href="{{ url_for('conversation', user_id=user.user_id) }}" class="list-group-item list-group-item-action">
+                        <i class="bi bi-person-circle"></i> {{ user.full_name }}
+                        <small class="text-muted d-block">{{ user.role }}</small>
+                    </a>
+                    {% endfor %}
+                    {% if users|length > 10 %}
+                    <small class="text-muted">... y {{ users|length - 10 }} más</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Lista de mensajes -->
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-{% if current_tab == 'sent' %}send{% else %}inbox{% endif %}"></i>
+                {{ title|default('Bandeja de Entrada') }}
+                <span class="badge bg-secondary ms-2">{{ pagination.total if pagination else 0 }}</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% if pagination and pagination.items %}
+                        {% for msg in pagination.items %}
+                        <div class="list-group-item {% if not msg.is_read and current_tab != 'sent' %}bg-light{% endif %}">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center">
+                                        {% if not msg.is_read and current_tab != 'sent' %}
+                                        <span class="badge bg-primary me-2">Nuevo</span>
+                                        {% endif %}
+                                        <strong>{{ msg.subject }}</strong>
+                                    </div>
+                                    <p class="mb-1 small text-muted">
+                                        {% if current_tab == 'sent' %}
+                                        Para: <strong>{{ msg.receiver.full_name }}</strong>
+                                        {% else %}
+                                        De: <strong>{{ msg.sender.full_name }}</strong>
+                                        {% endif %}
+                                        <span class="mx-2">•</span>
+                                        {{ msg.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </p>
+                                    <p class="mb-0 small">{{ msg.content[:100] }}{% if msg.content|length > 100 %}...{% endif %}</p>
+                                </div>
+                                <div class="btn-group btn-group-sm">
+                                    {% if current_tab == 'sent' %}
+                                    <a href="{{ url_for('conversation', user_id=msg.receiver_id) }}" class="btn btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    {% else %}
+                                    <a href="{{ url_for('conversation', user_id=msg.sender_id) }}" class="btn btn-outline-primary">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('send_message') }}?receiver_id={{ msg.sender_id }}&subject=RE: {{ msg.subject }}" class="btn btn-outline-success">
+                                        <i class="bi bi-reply"></i>
+                                    </a>
+                                    {% endif %}
+                                    <button class="btn btn-outline-danger" onclick="deleteMessage({{ msg.message_id }})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="list-group-item text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-1 d-block"></i>
+                        <p class="mt-2">No hay mensajes en {{ title|lower }}</p>
+                        <a href="{{ url_for('send_message') }}" class="btn btn-sm btn-primary">
+                            Enviar mensaje
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% if pagination and pagination.pages > 1 %}
+            <div class="card-footer">
+                <nav>
+                    <ul class="pagination justify-content-center mb-0">
+                        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                            <a class="page-link" href="?page={{ pagination.prev_num }}{% if current_tab == 'sent' %}&tab=sent{% endif %}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        {% for page in pagination.iter_pages() %}
+                            {% if page %}
+                            <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="?page={{ page }}{% if current_tab == 'sent' %}&tab=sent{% endif %}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                            <a class="page-link" href="?page={{ pagination.next_num }}{% if current_tab == 'sent' %}&tab=sent{% endif %}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteMessage(id) {
+    if (!confirm('¿Eliminar este mensaje?')) return;
+    
+    fetch(`/messages/delete/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(err => {
+        alert('Error al eliminar el mensaje');
+        console.error(err);
+    });
+}
+</script>
+{% endblock %}

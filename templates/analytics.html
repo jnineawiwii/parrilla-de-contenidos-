@@ -1,0 +1,260 @@
+{% extends "layout.html" %}
+
+{% block title %}Analíticas - RTP CMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+    }
+    .stat-card .number {
+        font-size: 2.5rem;
+        font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2><i class="bi bi-graph-up text-success"></i> Analíticas y Reportes</h2>
+
+<!-- Filtros -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Fecha Desde</label>
+                <input type="date" class="form-control" name="date_from" value="{{ date_from or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Fecha Hasta</label>
+                <input type="date" class="form-control" name="date_to" value="{{ date_to or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Campaña</label>
+                <select class="form-select" name="campaign_id">
+                    <option value="">Todas</option>
+                    {% for campaign in campaigns %}
+                    <option value="{{ campaign.campaign_id }}" {% if selected_campaign == campaign.campaign_id %}selected{% endif %}>
+                        {{ campaign.campaign_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Analizar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tarjetas de resumen -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-primary bg-opacity-10 border border-primary">
+            <div class="number text-primary">{{ total_posts }}</div>
+            <div class="text-muted">Total de Publicaciones</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-success bg-opacity-10 border border-success">
+            <div class="number text-success">{{ total_reach|default(0)|int }}</div>
+            <div class="text-muted">Alcance Total</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-info bg-opacity-10 border border-info">
+            <div class="number text-info">{{ total_interaction|default(0)|int }}</div>
+            <div class="text-muted">Interacción Total</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-warning bg-opacity-10 border border-warning">
+            <div class="number text-warning">{{ (total_interaction/total_posts)|default(0)|round(1) if total_posts > 0 else 0 }}</div>
+            <div class="text-muted">Interacción Promedio</div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart"></i> Alcance por Plataforma
+            </div>
+            <div class="card-body">
+                <canvas id="platformReachChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart"></i> Interacción por Plataforma
+            </div>
+            <div class="card-body">
+                <canvas id="platformInteractionChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pie-chart"></i> Alcance por Campaña
+            </div>
+            <div class="card-body">
+                <canvas id="campaignReachChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pie-chart"></i> Interacción por Campaña
+            </div>
+            <div class="card-body">
+                <canvas id="campaignInteractionChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de publicaciones analizadas -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-table"></i> Detalle de Publicaciones</span>
+        {% if selected_campaign %}
+        <a href="{{ url_for('export_analytics', campaign_id=selected_campaign) }}" class="btn btn-sm btn-success">
+            <i class="bi bi-file-earmark-excel"></i> Exportar CSV
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Título</th>
+                        <th>Campaña</th>
+                        <th class="text-end">Alcance</th>
+                        <th class="text-end">Interacción</th>
+                        <th>Plataformas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pub in publications[:50] %}
+                    <tr>
+                        <td>{{ pub.publication_date.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ pub.title[:40] }}{% if pub.title|length > 40 %}...{% endif %}</td>
+                        <td>{{ pub.campaign.campaign_name if pub.campaign else '-' }}</td>
+                        <td class="text-end">{{ pub.get_total_reach()|default(0)|int }}</td>
+                        <td class="text-end">{{ pub.get_total_interaction()|default(0)|int }}</td>
+                        <td>
+                            {% for pp in pub.publication_platforms %}
+                            <span class="badge bg-secondary">{{ pp.platform.platform_name }}</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-3">
+                            <i class="bi bi-inbox"></i> No hay publicaciones para analizar
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const colors = ['#28a745', '#17a2b8', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14', '#007bff'];
+    
+    // Gráfico de alcance por plataforma
+    if ({{ platform_labels|tojson }}.length > 0) {
+        new Chart(document.getElementById('platformReachChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ platform_labels|tojson }},
+                datasets: [{
+                    label: 'Alcance',
+                    data: {{ platform_reach|tojson }},
+                    backgroundColor: colors.slice(0, {{ platform_labels|length }})
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+        
+        new Chart(document.getElementById('platformInteractionChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ platform_labels|tojson }},
+                datasets: [{
+                    label: 'Interacción',
+                    data: {{ platform_interaction|tojson }},
+                    backgroundColor: colors.slice(0, {{ platform_labels|length }})
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+    
+    // Gráficos de campañas
+    if ({{ campaign_labels|tojson }}.length > 0) {
+        new Chart(document.getElementById('campaignReachChart'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ campaign_labels|tojson }},
+                datasets: [{
+                    data: {{ campaign_reach|tojson }},
+                    backgroundColor: colors.slice(0, {{ campaign_labels|length }})
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+        
+        new Chart(document.getElementById('campaignInteractionChart'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ campaign_labels|tojson }},
+                datasets: [{
+                    data: {{ campaign_interaction|tojson }},
+                    backgroundColor: colors.slice(0, {{ campaign_labels|length }})
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

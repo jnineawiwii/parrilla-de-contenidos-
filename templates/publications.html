@@ -1,0 +1,270 @@
+{% extends "layout.html" %}
+
+{% block title %}Parrilla de Contenidos - RTP CMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap mb-3">
+    <h2><i class="bi bi-calendar2-week text-success"></i> Parrilla de Contenidos</h2>
+    <a href="{{ url_for('new_publication') }}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nueva Publicación
+    </a>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Mes</label>
+                <input type="month" class="form-control" name="month" value="{{ current_month or '' }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Campaña</label>
+                <select class="form-select" name="campaign_id">
+                    <option value="">Todas</option>
+                    {% for campaign in campaigns %}
+                    <option value="{{ campaign.campaign_id }}" {% if current_campaign == campaign.campaign_id %}selected{% endif %}>
+                        {{ campaign.campaign_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Estado</label>
+                <select class="form-select" name="status">
+                    <option value="">Todos</option>
+                    {% for s in statuses %}
+                    <option value="{{ s }}" {% if current_status == s %}selected{% endif %}>{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Buscar</label>
+                <input type="text" class="form-control" name="search" placeholder="Título..." value="{{ current_search or '' }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de Publicaciones -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" style="font-size: 0.8rem;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 80px;">Fecha</th>
+                        <th style="min-width: 90px;">Día</th>
+                        <th style="min-width: 150px;">Título</th>
+                        <th style="min-width: 120px;">Campaña</th>
+                        <th style="min-width: 100px;">Tema</th>
+                        <th style="min-width: 100px;">Subtema</th>
+                        <th style="min-width: 90px;">Formato</th>
+                        <th style="min-width: 100px;">Plataformas</th>
+                        <th style="min-width: 80px;">Estado</th>
+                        <th style="min-width: 120px;">Responsable</th>
+                        <th style="min-width: 100px;">Producción</th>
+                        <th style="min-width: 110px;">Postprod.</th>
+                        <th style="min-width: 80px;">Notas</th>
+                        <th style="min-width: 140px;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pub in publications %}
+                    <tr>
+                        <td>
+                            {{ pub.publication_date.strftime('%d/%m/%Y') }}
+                            <br><small class="text-muted">{{ pub.publication_date.strftime('%H:%M') }}</small>
+                        </td>
+                        <td>{{ pub.day_of_week or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('edit_publication', pub_id=pub.publication_id) }}" class="text-decoration-none fw-bold">
+                                {{ pub.title[:40] }}{% if pub.title|length > 40 %}...{% endif %}
+                            </a>
+                            {% if pub.copy_text %}
+                            <br><small class="text-muted">{{ pub.copy_text[:30] }}{% if pub.copy_text|length > 30 %}...{% endif %}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if pub.campaign %}
+                            <span class="badge" style="background-color: {{ pub.campaign.color or '#6c757d' }}; color: white;">
+                                {{ pub.campaign.campaign_name }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ pub.theme.theme_name if pub.theme else '-' }}</td>
+                        <td>{{ pub.subtheme.subtheme_name if pub.subtheme else '-' }}</td>
+                        <td>
+                            {% if pub.content_format %}
+                            <span class="badge bg-secondary">{{ pub.content_format.format_name }}</span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% for pp in pub.publication_platforms %}
+                            <span class="platform-badge platform-{{ pp.platform.platform_name|lower }}" style="font-size: 0.6rem;">
+                                <i class="bi {{ pp.platform.icon }}"></i>
+                                {{ pp.platform.platform_name }}
+                                {% if pp.status == 'Publicado' %}
+                                <i class="bi bi-check-circle text-success"></i>
+                                {% elif pp.status == 'Pendiente' %}
+                                <i class="bi bi-clock text-warning"></i>
+                                {% else %}
+                                <i class="bi bi-x-circle text-danger"></i>
+                                {% endif %}
+                            </span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <span class="badge {% if pub.status == 'Published' %}bg-success{% elif pub.status == 'Draft' %}bg-warning text-dark{% elif pub.status == 'Approved' %}bg-info{% elif pub.status == 'In_Review' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ pub.status }}
+                            </span>
+                        </td>
+                        <td>{{ pub.responsible_user.full_name if pub.responsible_user else '-' }}</td>
+                        <td>{{ pub.production_user.full_name if pub.production_user else '-' }}</td>
+                        <td>{{ pub.postproduction_user.full_name if pub.postproduction_user else '-' }}</td>
+                        <td>
+                            {% if pub.notes %}
+                            <span class="text-truncate d-inline-block" style="max-width: 80px;" title="{{ pub.notes }}">
+                                {{ pub.notes[:20] }}{% if pub.notes|length > 20 %}...{% endif %}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('edit_publication', pub_id=pub.publication_id) }}" class="btn btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a href="{{ url_for('publication_platforms', pub_id=pub.publication_id) }}" class="btn btn-outline-info" title="Plataformas">
+                                    <i class="bi bi-share"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-success" title="Duplicar" onclick="duplicatePublication({{ pub.publication_id }})">
+                                    <i class="bi bi-copy"></i>
+                                </button>
+                                {% if current_user.is_supervisor() %}
+                                <button type="button" class="btn btn-outline-danger" title="Eliminar" onclick="deletePublication({{ pub.publication_id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="14" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-3 d-block"></i>
+                            No hay publicaciones que coincidan con los filtros
+                            <br><small>Haz clic en "Nueva Publicación" para crear una</small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Paginación -->
+{% if pagination and pagination.pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination justify-content-center flex-wrap">
+        <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="?page={{ pagination.prev_num }}{% if current_campaign %}&campaign_id={{ current_campaign }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_month %}&month={{ current_month }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">
+                <i class="bi bi-chevron-left"></i>
+            </a>
+        </li>
+        {% for page in pagination.iter_pages(left_edge=2, left_current=2, right_current=3, right_edge=2) %}
+            {% if page %}
+                <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="?page={{ page }}{% if current_campaign %}&campaign_id={{ current_campaign }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_month %}&month={{ current_month }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">
+                        {{ page }}
+                    </a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+        {% endfor %}
+        <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+            <a class="page-link" href="?page={{ pagination.next_num }}{% if current_campaign %}&campaign_id={{ current_campaign }}{% endif %}{% if current_status %}&status={{ current_status }}{% endif %}{% if current_month %}&month={{ current_month }}{% endif %}{% if current_search %}&search={{ current_search }}{% endif %}">
+                <i class="bi bi-chevron-right"></i>
+            </a>
+        </li>
+    </ul>
+</nav>
+{% endif %}
+
+<script>
+function deletePublication(id) {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta publicación?')) return;
+    
+    fetch(`/publication/${id}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(err => {
+        alert('Error al eliminar la publicación');
+        console.error(err);
+    });
+}
+
+function duplicatePublication(id) {
+    if (!confirm('¿Deseas duplicar esta publicación?')) return;
+    
+    fetch(`/publication/${id}/duplicate`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = `/publication/${data.new_id}/edit`;
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(err => {
+        alert('Error al duplicar la publicación');
+        console.error(err);
+    });
+}
+</script>
+
+<style>
+.platform-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    margin: 1px;
+    background: #f0f0f0;
+}
+.platform-facebook { background: #1877f2; color: white; }
+.platform-twitter { background: #000000; color: white; }
+.platform-instagram { background: #e4405f; color: white; }
+.platform-youtube { background: #ff0000; color: white; }
+.platform-tiktok { background: #000000; color: white; }
+</style>
+{% endblock %}

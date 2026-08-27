@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block title %}Campañas - RTP CMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2><i class="bi bi-tags text-success"></i> Campañas</h2>
+    {% if current_user.is_admin() %}
+    <a href="{{ url_for('new_campaign') }}" class="btn btn-success">
+        <i class="bi bi-plus-circle"></i> Nueva Campaña
+    </a>
+    {% endif %}
+</div>
+
+<div class="row">
+    {% for campaign in campaigns %}
+    <div class="col-md-6 col-xl-4 mb-3">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-header" style="background-color: {{ campaign.color }}20; border-color: {{ campaign.color }};">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <span class="badge" style="background-color: {{ campaign.color }}; color: white;">
+                            {{ campaign.campaign_name }}
+                        </span>
+                    </h5>
+                    <span class="badge {% if campaign.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                        {{ 'Activa' if campaign.is_active else 'Inactiva' }}
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="card-text small">{{ campaign.description[:120] }}{% if campaign.description and campaign.description|length > 120 %}...{% endif %}</p>
+                
+                {% if campaign.objective %}
+                <div class="mb-2">
+                    <strong class="small text-muted">Objetivo:</strong>
+                    <p class="small mb-0">{{ campaign.objective[:80] }}...</p>
+                </div>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <small class="text-muted">
+                        <i class="bi bi-calendar"></i> {{ campaign.created_at.strftime('%d/%m/%Y') }}
+                    </small>
+                    <small class="text-muted">
+                        <i class="bi bi-file-text"></i> {{ campaign.publications|length }} publicaciones
+                    </small>
+                </div>
+            </div>
+            <div class="card-footer bg-white border-0">
+                <div class="btn-group w-100">
+                    <a href="{{ url_for('publications') }}?campaign_id={{ campaign.campaign_id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-list"></i> Ver publicaciones
+                    </a>
+                    {% if current_user.is_admin() %}
+                    <a href="{{ url_for('edit_campaign', campaign_id=campaign.campaign_id) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                            onclick="deleteCampaign({{ campaign.campaign_id }}, '{{ campaign.campaign_name }}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center py-4">
+            <i class="bi bi-tags fs-3 d-block"></i>
+            <p>No hay campañas registradas</p>
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('new_campaign') }}" class="btn btn-primary">Crear primera campaña</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function deleteCampaign(id, name) {
+    if (!confirm(`¿Estás seguro de que deseas eliminar la campaña "${name}"?`)) return;
+    
+    fetch(`/campaign/${id}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(err => {
+        alert('Error al eliminar la campaña');
+        console.error(err);
+    });
+}
+</script>
+{% endblock %}

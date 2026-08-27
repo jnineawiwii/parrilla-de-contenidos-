@@ -1,0 +1,274 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - RTP-Parrilla de Contenidos{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2 text-success"></i> Dashboard</h2>
+    <div>
+        <span class="text-muted me-3">
+            <i class="bi bi-calendar3"></i> {{ now.strftime('%d/%m/%Y') if now else '' }}
+        </span>
+        <a href="{{ url_for('new_publication') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Nueva Publicación
+        </a>
+    </div>
+</div>
+
+<!-- Tarjetas de Estadísticas -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50">Total Publicaciones</h6>
+                        <h2 class="mb-0">{{ total_publications }}</h2>
+                    </div>
+                    <i class="bi bi-files fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50">Publicadas</h6>
+                        <h2 class="mb-0">{{ published_count }}</h2>
+                    </div>
+                    <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-dark-50">En Revisión</h6>
+                        <h2 class="mb-0">{{ in_review_count }}</h2>
+                    </div>
+                    <i class="bi bi-clock-history fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-white-50">Vencen Pronto</h6>
+                        <h2 class="mb-0">{{ deadline_soon }}</h2>
+                    </div>
+                    <i class="bi bi-exclamation-triangle fs-1 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Segunda fila de tarjetas -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-info h-100">
+            <div class="card-body">
+                <h6 class="card-title text-info"><i class="bi bi-pencil"></i> Borradores</h6>
+                <h3>{{ draft_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-success h-100">
+            <div class="card-body">
+                <h6 class="card-title text-success"><i class="bi bi-check2-all"></i> Aprobadas</h6>
+                <h3>{{ approved_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-primary h-100">
+            <div class="card-body">
+                <h6 class="card-title text-primary"><i class="bi bi-calendar-month"></i> Este Mes</h6>
+                <h3>{{ month_publications }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-secondary h-100">
+            <div class="card-body">
+                <h6 class="card-title text-secondary"><i class="bi bi-tags"></i> Campañas Activas</h6>
+                <h3>{{ total_campaigns }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos y Tablas -->
+<div class="row">
+    <!-- Gráfico de distribución por día -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-bar-chart"></i> Publicaciones por Día de la Semana
+            </div>
+            <div class="card-body">
+                <canvas id="dayChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gráfico de distribución por campaña -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-pie-chart"></i> Distribución por Campaña (últimos 30 días)
+            </div>
+            <div class="card-body">
+                <canvas id="campaignChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Publicaciones Recientes y Notificaciones -->
+<div class="row">
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock-history"></i> Publicaciones Recientes</span>
+                <a href="{{ url_for('publications') }}" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Título</th>
+                                <th>Campaña</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pub in recent_publications %}
+                            <tr>
+                                <td>{{ pub.publication_date.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    <a href="{{ url_for('edit_publication', pub_id=pub.publication_id) }}" class="text-decoration-none">
+                                        {{ pub.title[:40] }}{% if pub.title|length > 40 %}...{% endif %}
+                                    </a>
+                                </td>
+                                <td>{{ pub.campaign.campaign_name if pub.campaign else '-' }}</td>
+                                <td>
+                                    <span class="badge {% if pub.status == 'Published' %}bg-success{% elif pub.status == 'Draft' %}bg-warning{% elif pub.status == 'Approved' %}bg-info{% elif pub.status == 'In_Review' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                        {{ pub.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">
+                                    <i class="bi bi-inbox"></i> No hay publicaciones recientes
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bell"></i> Notificaciones Recientes
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for notif in unread_notifications %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <small class="text-muted">{{ notif.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                        </div>
+                        
+                    </div>
+                    {% else %}
+                    <div class="list-group-item text-center text-muted py-3">
+                        <i class="bi bi-check-circle"></i> No hay notificaciones pendientes
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="card-footer text-center">
+                <a href="{{ url_for('notifications') }}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de días de la semana
+    const dayCtx = document.getElementById('dayChart').getContext('2d');
+    new Chart(dayCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ day_labels|tojson }},
+            datasets: [{
+                label: 'Publicaciones',
+                data: {{ day_values|tojson }},
+                backgroundColor: ['#28a745', '#20c997', '#17a2b8', '#007bff', '#6f42c1', '#fd7e14', '#dc3545'],
+                borderColor: '#fff',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+    
+    // Gráfico de campañas
+    const campaignCtx = document.getElementById('campaignChart').getContext('2d');
+    const campaignData = {{ campaign_stats|tojson }};
+    const campaignLabels = campaignData.map(item => item[0]);
+    const campaignCounts = campaignData.map(item => item[1]);
+    
+    // Colores aleatorios para las campañas
+    const colors = ['#28a745', '#17a2b8', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14', '#007bff'];
+    
+    new Chart(campaignCtx, {
+        type: 'doughnut',
+        data: {
+            labels: campaignLabels,
+            datasets: [{
+                data: campaignCounts,
+                backgroundColor: colors.slice(0, campaignLabels.length),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

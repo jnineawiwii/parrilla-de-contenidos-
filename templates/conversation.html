@@ -1,0 +1,114 @@
+{% extends "layout.html" %}
+
+{% block title %}Conversación con {{ other_user.full_name }} - RTP CMS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>
+        <i class="bi bi-chat-dots text-success"></i>
+        Conversación con {{ other_user.full_name }}
+        <small class="text-muted fs-6">({{ other_user.role }})</small>
+    </h2>
+    <div>
+        <a href="{{ url_for('messages') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="card">
+            <div class="card-header bg-light">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-person-circle fs-3 me-2"></i>
+                    <div>
+                        <strong>{{ other_user.full_name }}</strong>
+                        <br>
+                        <small class="text-muted">{{ other_user.role }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;" id="messageContainer">
+                {% for msg in messages %}
+                <div class="mb-3 {% if msg.sender_id == current_user.user_id %}text-end{% endif %}">
+                    <div class="d-inline-block p-3 rounded-3 {% if msg.sender_id == current_user.user_id %}bg-success text-white{% else %}bg-light{% endif %}" 
+                         style="max-width: 75%;">
+                        <div class="small {% if msg.sender_id == current_user.user_id %}text-white-50{% else %}text-muted{% endif %}">
+                            <strong>{{ msg.sender.full_name }}</strong>
+                            <span class="mx-2">•</span>
+                            {{ msg.created_at.strftime('%d/%m/%Y %H:%M') }}
+                            {% if msg.sender_id != current_user.user_id and not msg.is_read %}
+                            <span class="badge bg-primary ms-2">Nuevo</span>
+                            {% endif %}
+                        </div>
+                        <div class="mt-1">{{ msg.content }}</div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-chat fs-1 d-block"></i>
+                    <p class="mt-2">No hay mensajes en esta conversación</p>
+                    <p><small>Envía el primer mensaje usando el formulario de abajo</small></p>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="card-footer">
+                <form method="POST" action="{{ url_for('send_message') }}">
+                    <input type="hidden" name="receiver_id" value="{{ other_user.user_id }}">
+                    <input type="hidden" name="from_conversation" value="1">
+                    
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <input type="text" class="form-control" name="subject" 
+                                   placeholder="Asunto" value="RE: Conversación">
+                        </div>
+                        <div class="col-md-7">
+                            <textarea class="form-control" name="content" rows="2" 
+                                      placeholder="Escribe tu mensaje..." required></textarea>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-success w-100 h-100">
+                                <i class="bi bi-send"></i> Enviar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Panel lateral con usuarios -->
+    <div class="col-lg-3">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-people"></i> Usuarios
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush" style="max-height: 400px; overflow-y: auto;">
+                    {% for user in users %}
+                    <a href="{{ url_for('conversation', user_id=user.user_id) }}" 
+                       class="list-group-item list-group-item-action {% if user.user_id == other_user.user_id %}active{% endif %}">
+                        <i class="bi bi-person-circle"></i> {{ user.full_name }}
+                        <br>
+                        <small class="{% if user.user_id == other_user.user_id %}text-white-50{% else %}text-muted{% endif %}">
+                            {{ user.role }}
+                        </small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-scroll al final de la conversación
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('messageContainer');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+});
+</script>
+{% endblock %}

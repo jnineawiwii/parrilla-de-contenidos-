@@ -1,0 +1,339 @@
+{% extends "layout.html" %}
+
+{% block title %}Plataformas - {{ publication.title[:50] }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h2><i class="bi bi-share text-rtp-green"></i> Plataformas</h2>
+        <p class="text-muted-rtp">{{ publication.title }}</p>
+    </div>
+    <div>
+        <a href="{{ url_for('edit_publication', pub_id=publication.publication_id) }}" class="btn btn-outline-primary">
+            <i class="bi bi-pencil"></i> Editar Publicación
+        </a>
+        <a href="{{ url_for('publications') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    {% for item in platforms_with_stats %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center" 
+                 style="background: linear-gradient(135deg, {{ item.platform.color }}40, {{ item.platform.color }}20);">
+                <h5 class="mb-0">
+                    <i class="bi {{ item.platform.icon }}" style="color: {{ item.platform.color }};"></i>
+                    {{ item.platform.platform_name }}
+                </h5>
+                <span class="badge {% if item.data.status == 'Publicado' %}badge-success{% elif item.data.status == 'Pendiente' %}badge-warning{% else %}badge-secondary{% endif %}">
+                    {{ item.data.status }}
+                </span>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="platform_id" value="{{ item.platform.platform_id }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">
+                            <i class="bi bi-link-45deg"></i> Link de la publicación
+                        </label>
+                        <div class="input-group">
+                            <input type="url" class="form-control" name="link" 
+                                   value="{{ item.data.link or '' }}" placeholder="https://www.facebook.com/..." id="linkInput_{{ item.platform.platform_id }}">
+                            <button type="button" class="btn btn-outline-secondary" onclick="analyzeLink('{{ item.platform.platform_id }}')" title="Intentar obtener estadísticas (solo con API)">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted-rtp">Ingresa el enlace de la publicación para referencia</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Estado</label>
+                        <select class="form-select" name="status">
+                            <option value="Pendiente" {% if item.data.status == 'Pendiente' %}selected{% endif %}>Pendiente</option>
+                            <option value="Publicado" {% if item.data.status == 'Publicado' %}selected{% endif %}>Publicado</option>
+                            <option value="Error" {% if item.data.status == 'Error' %}selected{% endif %}>Error</option>
+                            <option value="Cancelado" {% if item.data.status == 'Cancelado' %}selected{% endif %}>Cancelado</option>
+                        </select>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="fw-bold"><i class="bi bi-bar-chart"></i> Estadísticas</h6>
+                    <p class="text-muted-rtp small">Ingresa manualmente los datos de rendimiento de la publicación</p>
+                    
+                    {% if item.platform.platform_name == 'Facebook' %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label small">Alcance</label>
+                                <input type="number" class="form-control form-control-sm" name="fb_reach" 
+                                       value="{{ item.data.fb_reach or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-hand-thumbs-up"></i> Me gusta</label>
+                                <input type="number" class="form-control form-control-sm" name="fb_likes" 
+                                       value="{{ item.data.fb_likes or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-chat"></i> Comentarios</label>
+                                <input type="number" class="form-control form-control-sm" name="fb_comments" 
+                                       value="{{ item.data.fb_comments or 0 }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-share"></i> Compartidos</label>
+                                <input type="number" class="form-control form-control-sm" name="fb_shares" 
+                                       value="{{ item.data.fb_shares or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-people"></i> Interacción</label>
+                                <input type="number" class="form-control form-control-sm" name="fb_interaction" 
+                                       value="{{ item.data.fb_interaction or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-play-btn"></i> Reproducciones</label>
+                                <input type="number" class="form-control form-control-sm" name="fb_video_views" 
+                                       value="{{ item.data.fb_video_views or 0 }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% elif item.platform.platform_name == 'Instagram' %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label small">Alcance</label>
+                                <input type="number" class="form-control form-control-sm" name="ig_reach" 
+                                       value="{{ item.data.ig_reach or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-heart-fill text-danger"></i> Corazones</label>
+                                <input type="number" class="form-control form-control-sm" name="ig_hearts" 
+                                       value="{{ item.data.ig_hearts or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-chat"></i> Comentarios</label>
+                                <input type="number" class="form-control form-control-sm" name="ig_comments" 
+                                       value="{{ item.data.ig_comments or 0 }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-share"></i> Compartidos</label>
+                                <input type="number" class="form-control form-control-sm" name="ig_shares" 
+                                       value="{{ item.data.ig_shares or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-people"></i> Interacción</label>
+                                <input type="number" class="form-control form-control-sm" name="ig_interaction" 
+                                       value="{{ item.data.ig_interaction or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-play-btn"></i> Reproducciones</label>
+                                <input type="number" class="form-control form-control-sm" name="ig_video_views" 
+                                       value="{{ item.data.ig_video_views or 0 }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% elif item.platform.platform_name == 'Twitter' %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-eye"></i> Impresiones</label>
+                                <input type="number" class="form-control form-control-sm" name="tw_impressions" 
+                                       value="{{ item.data.tw_impressions or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-heart-fill text-danger"></i> Me gusta</label>
+                                <input type="number" class="form-control form-control-sm" name="tw_likes" 
+                                       value="{{ item.data.tw_likes or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-chat"></i> Respuestas</label>
+                                <input type="number" class="form-control form-control-sm" name="tw_responses" 
+                                       value="{{ item.data.tw_responses or 0 }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-arrow-repeat"></i> Retweets</label>
+                                <input type="number" class="form-control form-control-sm" name="tw_retweets" 
+                                       value="{{ item.data.tw_retweets or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-people"></i> Interacción</label>
+                                <input type="number" class="form-control form-control-sm" name="tw_interaction" 
+                                       value="{{ item.data.tw_interaction or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-play-btn"></i> Reproducciones</label>
+                                <input type="number" class="form-control form-control-sm" name="tw_video_views" 
+                                       value="{{ item.data.tw_video_views or 0 }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% elif item.platform.platform_name == 'YouTube' %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-eye"></i> Visualizaciones</label>
+                                <input type="number" class="form-control form-control-sm" name="yt_views" 
+                                       value="{{ item.data.yt_views or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-hand-thumbs-up"></i> Me gusta</label>
+                                <input type="number" class="form-control form-control-sm" name="yt_likes" 
+                                       value="{{ item.data.yt_likes or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-chat"></i> Comentarios</label>
+                                <input type="number" class="form-control form-control-sm" name="yt_comments" 
+                                       value="{{ item.data.yt_comments or 0 }}" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-share"></i> Compartidos</label>
+                                <input type="number" class="form-control form-control-sm" name="yt_shares" 
+                                       value="{{ item.data.yt_shares or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-people"></i> Interacción</label>
+                                <input type="number" class="form-control form-control-sm" name="yt_interaction" 
+                                       value="{{ item.data.yt_interaction or 0 }}" min="0">
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small"><i class="bi bi-clock"></i> Tiempo visto (min)</label>
+                                <input type="number" class="form-control form-control-sm" name="yt_watch_time" 
+                                       value="{{ item.data.yt_watch_time or 0 }}" min="0">
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-success w-100 mt-3">
+                        <i class="bi bi-save"></i> Actualizar Estadísticas
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            Esta publicación no tiene plataformas asignadas.
+            <a href="{{ url_for('edit_publication', pub_id=publication.publication_id) }}" class="alert-link">
+                Edita la publicación para agregar plataformas
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Resumen de estadísticas -->
+{% if platforms_with_stats %}
+<div class="card mt-3">
+    <div class="card-header card-header-success">
+        <h6 class="mb-0"><i class="bi bi-graph-up"></i> Resumen de Estadísticas</h6>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h4 class="text-rtp-green">{{ publication.get_total_reach()|default(0)|int }}</h4>
+                <small class="text-muted-rtp">Alcance Total</small>
+            </div>
+            <div class="col-md-3">
+                <h4 class="text-cdmx-burgundy">{{ publication.get_total_interaction()|default(0)|int }}</h4>
+                <small class="text-muted-rtp">Interacción Total</small>
+            </div>
+            <div class="col-md-3">
+                <h4 class="text-rtp-green">{{ platforms_with_stats|length }}</h4>
+                <small class="text-muted-rtp">Plataformas Activas</small>
+            </div>
+            <div class="col-md-3">
+                {% set published_count = platforms_with_stats|selectattr('data.status', 'equalto', 'Publicado')|list|length %}
+                <h4 class="text-success">{{ published_count }}/{{ platforms_with_stats|length }}</h4>
+                <small class="text-muted-rtp">Publicadas</small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function analyzeLink(platformId) {
+    const input = document.getElementById('linkInput_' + platformId);
+    const link = input.value.trim();
+    
+    if (!link) {
+        showToast('Ingresa un enlace primero', 'warning');
+        return;
+    }
+    
+    // Mostrar mensaje de que la función requiere API
+    showToast('Para analizar automáticamente se requiere la API de la plataforma. Ingresa las estadísticas manualmente.', 'info');
+    
+    // Si tienes API configurada, puedes hacer la llamada aquí
+    /*
+    fetch(`/api/analyze/${platformId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: link })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Llenar los campos con los datos obtenidos
+            showToast('Estadísticas obtenidas correctamente', 'success');
+        } else {
+            showToast('Error al obtener estadísticas: ' + data.message, 'danger');
+        }
+    });
+    */
+}
+
+function showToast(message, type) {
+    const colors = {
+        success: '#78BE20',
+        danger: '#9F2241',
+        warning: '#FDC60A',
+        info: '#73CAE6'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white border-0';
+    toast.style.backgroundColor = colors[type] || colors.info;
+    toast.style.position = 'fixed';
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.style.minWidth = '250px';
+    toast.style.boxShadow = '0 8px 25px rgba(0,0,0,0.2)';
+    toast.style.borderRadius = '10px';
+    toast.style.padding = '12px 16px';
+    
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2 fs-5"></i>
+            <span>${message}</span>
+            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}
+</script>
+{% endblock %}

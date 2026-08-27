@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTP CMS - Iniciar Sesión</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        /* Estilos basados en el Manual de Identidad Gráfica de RTP */
+        :root {
+            --rtp-guinda: #9F2241;      /* Pantone 7420 C */
+            --rtp-dorado: #BC955C;      /* Pantone 465 C */
+            --rtp-gris: #55585A;        /* Pantone 425 C */
+            --rtp-verde: #78BE20;       /* Pantone 368 C */
+            --rtp-negro: #2D2A26;       /* Pantone Black C */
+            --rtp-gris-claro: #B1B1B1;  /* Pantone Cool Gray 5 C */
+            --rtp-amarillo: #FDC60A;    /* Pantone 7548 C */
+            --rtp-azul: #266cb4;        /* Pantone 285 C */
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--rtp-guinda) 0%, #6b1530 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+            padding: 15px;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, var(--rtp-guinda) 0%, #6b1530 100%);
+            color: white;
+            padding: 30px 25px 25px;
+            text-align: center;
+            border-bottom: 3px solid var(--rtp-dorado);
+        }
+        
+        .login-header .logo-placeholder {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 12px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--rtp-dorado);
+            background: white;
+            padding: 5px;
+        }
+        
+        .login-header .logo-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+        
+        .login-header .logo-placeholder i {
+            font-size: 3rem;
+            color: var(--rtp-dorado);
+        }
+        
+        .login-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 1px;
+        }
+        
+        .login-header .subtitle {
+            font-size: 0.85rem;
+            opacity: 0.85;
+            margin: 5px 0 0;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+        
+        .login-header .rtp-tag {
+            font-size: 0.7rem;
+            opacity: 0.6;
+            margin-top: 8px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        
+        .login-body {
+            padding: 30px 30px 25px;
+        }
+        
+        .login-body .form-label {
+            font-weight: 600;
+            color: var(--rtp-gris);
+            font-size: 0.9rem;
+        }
+        
+        .login-body .form-control {
+            border-radius: 8px;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            transition: all 0.3s;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .login-body .form-control:focus {
+            border-color: var(--rtp-dorado);
+            box-shadow: 0 0 0 0.2rem rgba(188, 149, 92, 0.25);
+        }
+        
+        .login-body .form-control-lg {
+            font-size: 1rem;
+        }
+        
+        .login-body .btn-login {
+            background: linear-gradient(135deg, var(--rtp-guinda) 0%, #6b1530 100%);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            width: 100%;
+            transition: all 0.3s;
+            cursor: pointer;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        .login-body .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(159, 34, 65, 0.4);
+        }
+        
+        .login-body .btn-login:active {
+            transform: translateY(0);
+        }
+        
+        .login-body .form-check-input:checked {
+            background-color: var(--rtp-guinda);
+            border-color: var(--rtp-guinda);
+        }
+        
+        .login-body .form-check-label {
+            color: var(--rtp-gris);
+            font-size: 0.9rem;
+        }
+        
+        .login-footer {
+            background: #f8f9fa;
+            padding: 15px 30px;
+            text-align: center;
+            border-top: 2px solid var(--rtp-dorado);
+        }
+        
+        .login-footer small {
+            color: var(--rtp-gris);
+            font-size: 0.75rem;
+        }
+        
+        .login-footer .rtp-text {
+            color: var(--rtp-guinda);
+            font-weight: 700;
+        }
+        
+        .login-footer .separator {
+            color: var(--rtp-dorado);
+        }
+        
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: var(--rtp-guinda);
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert i {
+            margin-right: 8px;
+        }
+        
+        /* Línea decorativa dorada */
+        .gold-divider {
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--rtp-dorado), transparent);
+            margin: 15px 0;
+            opacity: 0.5;
+        }
+        
+        /* Animación */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .login-header {
+                padding: 20px 20px 18px;
+            }
+            
+            .login-header .logo-placeholder {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .login-body {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Header -->
+            <div class="login-header">
+                <div class="logo-placeholder">
+                    <img src="{{ url_for('static', filename='images/logo_inicio.jpg') }}" 
+                         alt="RTP Logo" 
+                         class="rounded-circle">
+                </div>
+                <h1>RTP</h1>
+                <p class="subtitle">Sistema de Gestión de Contenidos</p>
+                <p class="rtp-tag">Red de Transporte de Pasajeros CDMX</p>
+            </div>
+            
+            <!-- Body -->
+            <div class="login-body">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'info' }} alert-dismissible fade show" role="alert">
+                                <i class="bi bi-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-triangle{% elif category == 'warning' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="bi bi-person"></i> Usuario
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="username" name="username" 
+                               placeholder="Ingresa tu usuario" required autofocus
+                               value="{{ request.form.username if request.form else '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="bi bi-lock"></i> Contraseña
+                        </label>
+                        <input type="password" class="form-control form-control-lg" id="password" name="password" 
+                               placeholder="Ingresa tu contraseña" required>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember" value="on">
+                        <label class="form-check-label" for="remember">
+                            Recordar sesión
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn-login">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </button>
+                </form>
+                
+                <div class="gold-divider"></div>
+                
+                <div class="text-center">
+                    <small class="text-muted" style="color: var(--rtp-gris) !important;">
+                        <i class="bi bi-shield-check"></i> 
+                        Acceso restringido al personal autorizado
+                    </small>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="login-footer">
+                <small>
+                    <span class="rtp-text">RTP</span> Sistema Seguro 
+                    <span class="separator mx-1">|</span> 
+                    <i class="bi bi-clock"></i> 
+                    <span id="currentTime"></span>
+                    <span class="separator mx-1">|</span>
+                    <span style="color: var(--rtp-dorado);">v.2.0</span>
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Mostrar hora actual
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('es-MX', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+            document.getElementById('currentTime').textContent = timeStr;
+        }
+        updateTime();
+        setInterval(updateTime, 60000);
+        
+        // Auto-focus en el campo de usuario
+        document.addEventListener('DOMContentLoaded', function() {
+            const usernameInput = document.getElementById('username');
+            if (usernameInput && !usernameInput.value) {
+                usernameInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>
