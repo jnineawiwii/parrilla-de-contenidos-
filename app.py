@@ -23,7 +23,7 @@ load_dotenv()
 # Configuración de la aplicación
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-rtp-2025')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://postgres:12345678@localhost:5433/rtp_parrilla')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://postgres:janine123@localhost:5433/rtp_parrilla')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
@@ -98,7 +98,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     full_name = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), nullable=False, default='viewer')
+    role = db.Column(db.String(20), nullable=False, default='consultor')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
     is_active = db.Column(db.Boolean, default=True)
@@ -123,8 +123,35 @@ class User(UserMixin, db.Model):
     def is_admin(self):
         return self.role == 'admin'
 
+    def is_editor(self):
+        return self.role == 'editor'
+
+    def is_consultor(self):
+        return self.role == 'consultor'
+
+    def can_manage_users(self):
+        return self.is_admin()
+
+    def can_view_analytics(self):
+        return self.is_admin()
+
+    def can_access_messages(self):
+        return self.is_admin() or self.is_editor() or self.is_consultor()
+
+    def can_access_notifications(self):
+        return self.is_admin() or self.is_editor()
+
+    def can_edit_publications(self):
+        return self.is_admin() or self.is_editor()
+
+    def can_view_campaigns(self):
+        return self.is_admin()
+
+    def can_edit(self):
+        return self.can_edit_publications()
+
     def is_supervisor(self):
-        return self.role in ['admin', 'supervisor']
+        return self.is_admin()
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -379,6 +406,11 @@ class AuditLog(db.Model):
 
 
 # ======================== FUNCIONES DE CARGA DE USUARIO ========================
+@app.route('/settings')
+@login_required
+def settings():
+    """Página de configuración y accesibilidad"""
+    return render_template('settings.html', now=datetime.now())
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -386,25 +418,50 @@ def load_user(user_id):
 
 
 # ======================== DECORADORES PERSONALIZADOS ========================
+# ======================== DECORADORES PERSONALIZADOS ========================
 
 def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not current_user.is_admin():
             flash('Acceso denegado. Se requieren permisos de administrador.', 'danger')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('publications'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+
+def editor_required(f):
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.can_edit_publications():
+            flash('Acceso denegado. Se requieren permisos de editor.', 'danger')
+            return redirect(url_for('publications'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+
+def consultor_required(f):
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_consultor():
+            flash('Acceso denegado. Se requieren permisos de consultor.', 'danger')
+            return redirect(url_for('publications'))
+        return f(*args, **kwargs)
+    decorated_function.__name__ = f.__name__
+    return decorated_function
+
+
+def editor_or_admin_required(f):
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.can_edit_publications():
+            flash('Acceso denegado. Se requieren permisos de editor o administrador.', 'danger')
+            return redirect(url_for('publications'))
         return f(*args, **kwargs)
     decorated_function.__name__ = f.__name__
     return decorated_function
 
 
 def supervisor_required(f):
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_supervisor():
-            flash('Acceso denegado. Se requieren permisos de supervisor.', 'danger')
-            return redirect(url_for('dashboard'))
-        return f(*args, **kwargs)
-    decorated_function.__name__ = f.__name__
-    return decorated_function
+    return admin_required(f)
 
 
 # ======================== GENERACIÓN DE COPY CON GEMINI ========================
@@ -546,7 +603,9 @@ def generate_copy_simple():
 @app.route('/')
 def index():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        if current_user.is_admin():
+            return redirect(url_for('dashboard'))
+        return redirect(url_for('publications'))
     return redirect(url_for('login'))
 
 
@@ -574,7 +633,9 @@ def login():
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
-            return redirect(url_for('dashboard'))
+            if user.is_admin():
+                return redirect(url_for('dashboard'))
+            return redirect(url_for('publications'))
         else:
             flash('Usuario o contraseña incorrectos.', 'danger')
     
@@ -593,6 +654,7 @@ def logout():
 
 @app.route('/dashboard')
 @login_required
+@admin_required
 def dashboard():
     try:
         total_publications = Publication.query.count() or 0
@@ -711,6 +773,8 @@ def dashboard():
 @app.route('/publications')
 @login_required
 def publications():
+    if current_user.is_consultor():
+        flash('Tu rol solo permite ver la parrilla.', 'info')
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
     
@@ -767,6 +831,9 @@ def publications():
 @app.route('/publication/new', methods=['GET', 'POST'])
 @login_required
 def new_publication():
+    if not current_user.can_edit_publications():
+        flash('No tienes permiso para crear publicaciones.', 'danger')
+        return redirect(url_for('publications'))
     if request.method == 'POST':
         return save_publication()
     
@@ -793,7 +860,7 @@ def new_publication():
 def edit_publication(pub_id):
     publication = Publication.query.get_or_404(pub_id)
     
-    if not current_user.is_supervisor() and current_user.user_id != publication.responsible_user_id:
+    if not current_user.can_edit_publications() and current_user.user_id != publication.responsible_user_id:
         flash('No tienes permiso para editar esta publicación.', 'danger')
         return redirect(url_for('publications'))
     
@@ -823,6 +890,9 @@ def edit_publication(pub_id):
 
 def save_publication(pub_id=None):
     try:
+        if not current_user.can_edit_publications():
+            flash('No tienes permiso para guardar publicaciones.', 'danger')
+            return redirect(url_for('publications'))
         if pub_id:
             publication = Publication.query.get_or_404(pub_id)
         else:
@@ -912,7 +982,7 @@ def save_publication(pub_id=None):
 @app.route('/publication/<int:pub_id>/delete', methods=['POST'])
 @login_required
 def delete_publication(pub_id):
-    if not current_user.is_supervisor():
+    if not current_user.can_edit_publications():
         return jsonify({'success': False, 'message': 'No tienes permisos para eliminar publicaciones.'}), 403
     
     publication = Publication.query.get_or_404(pub_id)
@@ -930,6 +1000,8 @@ def delete_publication(pub_id):
 @app.route('/publication/<int:pub_id>/duplicate', methods=['POST'])
 @login_required
 def duplicate_publication(pub_id):
+    if not current_user.can_edit_publications():
+        return jsonify({'success': False, 'message': 'No tienes permisos para duplicar publicaciones.'}), 403
     original = Publication.query.get_or_404(pub_id)
     
     try:
@@ -1041,6 +1113,7 @@ def publication_platforms(pub_id):
 
 @app.route('/campaigns')
 @login_required
+@admin_required
 def campaigns():
     campaigns_list = Campaign.query.order_by(Campaign.campaign_name).all()
     return render_template('campaigns.html', campaigns=campaigns_list)
@@ -1170,6 +1243,8 @@ def notifications():
 @app.route('/notifications/mark-read/<int:notif_id>', methods=['POST'])
 @login_required
 def mark_notification_read(notif_id):
+    if not current_user.can_access_notifications():
+        return jsonify({'success': False, 'message': 'No tienes permiso.'}), 403
     notification = Notification.query.get_or_404(notif_id)
     
     if notification.user_id != current_user.user_id:
@@ -1183,6 +1258,8 @@ def mark_notification_read(notif_id):
 @app.route('/notifications/count-unread')
 @login_required
 def get_unread_notifications_count():
+    if not current_user.can_access_notifications():
+        return jsonify({'count': 0})
     count = Notification.query.filter_by(user_id=current_user.user_id, is_read=False).count()
     return jsonify({'count': count})
 
@@ -1192,6 +1269,9 @@ def get_unread_notifications_count():
 @app.route('/messages')
 @login_required
 def messages():
+    if not current_user.can_access_messages():
+        flash('No tienes permiso para ver mensajes.', 'danger')
+        return redirect(url_for('publications'))
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 15, type=int)
     tab = request.args.get('tab', 'inbox')
@@ -1227,6 +1307,9 @@ def messages():
 @app.route('/messages/send', methods=['GET', 'POST'])
 @login_required
 def send_message():
+    if not current_user.can_access_messages():
+        flash('No tienes permiso para enviar mensajes.', 'danger')
+        return redirect(url_for('publications'))
     if request.method == 'POST':
         try:
             receiver_id = request.form.get('receiver_id', type=int)
@@ -1291,6 +1374,9 @@ def send_message():
 @app.route('/messages/conversation/<int:user_id>')
 @login_required
 def conversation(user_id):
+    if not current_user.can_access_messages():
+        flash('No tienes permiso para ver conversaciones.', 'danger')
+        return redirect(url_for('publications'))
     other_user = User.query.get_or_404(user_id)
     
     messages = Message.query.filter(
@@ -1325,6 +1411,8 @@ def conversation(user_id):
 @app.route('/messages/read/<int:message_id>', methods=['POST'])
 @login_required
 def mark_message_read(message_id):
+    if not current_user.can_access_messages():
+        return jsonify({'success': False, 'message': 'No tienes permiso.'}), 403
     message = Message.query.get_or_404(message_id)
     
     if message.receiver_id != current_user.user_id:
@@ -1338,6 +1426,8 @@ def mark_message_read(message_id):
 @app.route('/messages/delete/<int:message_id>', methods=['POST'])
 @login_required
 def delete_message(message_id):
+    if not current_user.can_access_messages():
+        return jsonify({'success': False, 'message': 'No tienes permiso.'}), 403
     message = Message.query.get_or_404(message_id)
     
     if message.sender_id != current_user.user_id and message.receiver_id != current_user.user_id:
@@ -1355,6 +1445,8 @@ def delete_message(message_id):
 @app.route('/messages/unread-count')
 @login_required
 def get_unread_messages_count():
+    if not current_user.can_access_messages():
+        return jsonify({'count': 0})
     count = Message.query.filter_by(receiver_id=current_user.user_id, is_read=False).count()
     return jsonify({'count': count})
 
@@ -1363,6 +1455,7 @@ def get_unread_messages_count():
 
 @app.route('/analytics')
 @login_required
+@admin_required
 def analytics():
     date_from = request.args.get('date_from')
     date_to = request.args.get('date_to')
@@ -1536,7 +1629,7 @@ def new_user():
             username = request.form.get('username', '').strip()
             email = request.form.get('email', '').strip()
             full_name = request.form.get('full_name', '').strip()
-            role = request.form.get('role', 'viewer')
+            role = request.form.get('role', 'consultor')
             password = request.form.get('password', '')
             
             if not all([username, email, full_name, password]):
@@ -1573,7 +1666,7 @@ def new_user():
             logger.error(f"Error al crear usuario: {str(e)}")
             flash(f'Error al crear usuario: {str(e)}', 'danger')
     
-    roles = ['admin', 'supervisor', 'editor', 'designer', 'photographer', 'viewer']
+    roles = ['admin', 'editor', 'consultor']
     return render_template('user_form.html', user=None, roles=roles)
 
 
@@ -1588,7 +1681,7 @@ def edit_user(user_id):
             user.username = request.form.get('username', '').strip()
             user.email = request.form.get('email', '').strip()
             user.full_name = request.form.get('full_name', '').strip()
-            user.role = request.form.get('role', 'viewer')
+            user.role = request.form.get('role', 'consultor')
             user.is_active = request.form.get('is_active') == 'on'
             
             new_password = request.form.get('new_password', '')
@@ -1606,7 +1699,7 @@ def edit_user(user_id):
             logger.error(f"Error al actualizar usuario: {str(e)}")
             flash(f'Error al actualizar usuario: {str(e)}', 'danger')
     
-    roles = ['admin', 'supervisor', 'editor', 'designer', 'photographer', 'viewer']
+    roles = ['admin', 'editor', 'consultor']
     return render_template('user_form.html', user=user, roles=roles)
 
 
@@ -1755,7 +1848,7 @@ def create_user_command():
     username = click.prompt('Nombre de usuario')
     email = click.prompt('Correo electrónico')
     full_name = click.prompt('Nombre completo')
-    role = click.prompt('Rol', default='viewer')
+    role = click.prompt('Rol', default='consultor', type=click.Choice(['admin', 'editor', 'consultor'], case_sensitive=False))
     password = click.prompt('Contraseña', hide_input=True, confirmation_prompt=True)
     
     if User.query.filter_by(username=username).first():

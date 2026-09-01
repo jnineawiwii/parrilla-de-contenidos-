@@ -1,0 +1,859 @@
+{% extends "layout.html" %}
+
+{% block title %}Configuración - RTP CMS{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-left: 4px solid var(--rtp-green, #28a745);
+    }
+    .settings-section .section-title {
+        font-weight: 600;
+        color: var(--cdmx-burgundy, #9F2241);
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .setting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .setting-item:last-child {
+        border-bottom: none;
+    }
+    .setting-item .setting-label {
+        font-weight: 500;
+    }
+    .setting-item .setting-description {
+        font-size: 0.85rem;
+        color: #6c757d;
+        display: block;
+    }
+    .color-picker-group {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    .color-option {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .color-option:hover {
+        transform: scale(1.1);
+    }
+    .color-option.active {
+        border-color: #2D2A26;
+        box-shadow: 0 0 0 2px white, 0 0 0 4px #2D2A26;
+    }
+    .theme-preview {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    .theme-btn {
+        padding: 8px 16px;
+        border-radius: 8px;
+        border: 2px solid #dee2e6;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    .theme-btn:hover {
+        border-color: var(--rtp-green, #28a745);
+    }
+    .theme-btn.active {
+        border-color: var(--rtp-green, #28a745);
+        background: var(--rtp-green, #28a745);
+        color: white;
+    }
+    .font-size-control {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .font-size-control button {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: 2px solid #dee2e6;
+        background: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .font-size-control button:hover {
+        border-color: var(--rtp-green, #28a745);
+        background: var(--rtp-green, #28a745);
+        color: white;
+    }
+    .font-size-control .font-size-display {
+        font-weight: 600;
+        min-width: 40px;
+        text-align: center;
+    }
+    .shortcut-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+    }
+    .shortcut-item {
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 6px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    .shortcut-item kbd {
+        background: #2D2A26;
+        color: white;
+        padding: 2px 10px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-family: monospace;
+    }
+    .toggle-switch {
+        position: relative;
+        width: 50px;
+        height: 26px;
+        background: #ccc;
+        border-radius: 13px;
+        cursor: pointer;
+        transition: background 0.3s;
+        flex-shrink: 0;
+    }
+    .toggle-switch.active {
+        background: var(--rtp-green, #28a745);
+    }
+    .toggle-switch::after {
+        content: '';
+        position: absolute;
+        top: 3px;
+        left: 3px;
+        width: 20px;
+        height: 20px;
+        background: white;
+        border-radius: 50%;
+        transition: transform 0.3s;
+    }
+    .toggle-switch.active::after {
+        transform: translateX(24px);
+    }
+    @media (max-width: 768px) {
+        .setting-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .shortcut-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">
+    <i class="bi bi-gear text-success"></i> Configuración y Accesibilidad
+</h2>
+
+<div class="row">
+    <div class="col-lg-9">
+        <!-- Tema -->
+        <div class="settings-section">
+            <div class="section-title">
+                <i class="bi bi-palette"></i> Tema
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Modo de visualización</span>
+                    <span class="setting-description">Selecciona el tema que prefieras para la interfaz</span>
+                </div>
+                <div class="theme-preview">
+                    <button class="theme-btn active" data-theme="light" onclick="setTheme('light')">
+                        <i class="bi bi-sun"></i> Claro
+                    </button>
+                    <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')">
+                        <i class="bi bi-moon"></i> Oscuro
+                    </button>
+                    <button class="theme-btn" data-theme="auto" onclick="setTheme('auto')">
+                        <i class="bi bi-circle-half"></i> Automático
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tamaño de letra -->
+        <div class="settings-section">
+            <div class="section-title">
+                <i class="bi bi-fonts"></i> Tamaño de letra
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Ajustar tamaño del texto</span>
+                    <span class="setting-description">Aumenta o disminuye el tamaño del texto para una mejor lectura</span>
+                </div>
+                <div class="font-size-control">
+                    <button onclick="changeFontSize(-1)">A-</button>
+                    <span class="font-size-display" id="fontSizeDisplay">100%</span>
+                    <button onclick="changeFontSize(1)">A+</button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="resetFontSize()">Restablecer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colores -->
+        <div class="settings-section">
+            <div class="section-title">
+                <i class="bi bi-eyedropper"></i> Personalización de colores
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Color principal</span>
+                    <span class="setting-description">Elige el color que más te guste para la interfaz</span>
+                </div>
+                <div class="color-picker-group" id="colorPickerGroup">
+                    <div class="color-option active" style="background: #28a745;" data-color="#28a745" onclick="setColor('#28a745')"></div>
+                    <div class="color-option" style="background: #9F2241;" data-color="#9F2241" onclick="setColor('#9F2241')"></div>
+                    <div class="color-option" style="background: #007bff;" data-color="#007bff" onclick="setColor('#007bff')"></div>
+                    <div class="color-option" style="background: #6f42c1;" data-color="#6f42c1" onclick="setColor('#6f42c1')"></div>
+                    <div class="color-option" style="background: #fd7e14;" data-color="#fd7e14" onclick="setColor('#fd7e14')"></div>
+                    <div class="color-option" style="background: #20c997;" data-color="#20c997" onclick="setColor('#20c997')"></div>
+                    <div class="color-option" style="background: #dc3545;" data-color="#dc3545" onclick="setColor('#dc3545')"></div>
+                    <input type="color" id="customColorPicker" onchange="setCustomColor(this.value)" style="width: 32px; height: 32px; border: none; padding: 0; cursor: pointer; border-radius: 50%;">
+                </div>
+            </div>
+        </div>
+
+        <!-- Contraste -->
+        <div class="settings-section">
+            <div class="section-title">
+                <i class="bi bi-contrast"></i> Contraste
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Alto contraste</span>
+                    <span class="setting-description">Mejora la visibilidad del texto y los elementos</span>
+                </div>
+                <div class="toggle-switch" id="contrastToggle" onclick="toggleContrast()"></div>
+            </div>
+        </div>
+
+        <!-- Sonidos -->
+        <div class="settings-section">
+            <div class="section-title">
+                <i class="bi bi-volume-up"></i> Sonidos
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Efectos de sonido</span>
+                    <span class="setting-description">Activa o desactiva los sonidos del sistema</span>
+                </div>
+                <div class="toggle-switch active" id="soundToggle" onclick="toggleSound()"></div>
+            </div>
+        </div>
+
+        <!-- Atajos de teclado -->
+        <div class="settings-section">
+            <div class="section-title">
+                <i class="bi bi-keyboard"></i> Atajos de teclado
+            </div>
+            <div class="shortcut-grid">
+                <div class="shortcut-item">
+                    <span>Ir a Dashboard</span>
+                    <kbd>Alt + D</kbd>
+                </div>
+                <div class="shortcut-item">
+                    <span>Ir a Parrilla</span>
+                    <kbd>Alt + P</kbd>
+                </div>
+                <div class="shortcut-item">
+                    <span>Nueva publicación</span>
+                    <kbd>Alt + N</kbd>
+                </div>
+                <div class="shortcut-item">
+                    <span>Guardar</span>
+                    <kbd>Ctrl + S</kbd>
+                </div>
+                <div class="shortcut-item">
+                    <span>Buscar</span>
+                    <kbd>Ctrl + F</kbd>
+                </div>
+                <div class="shortcut-item">
+                    <span>Mensajes</span>
+                    <kbd>Alt + M</kbd>
+                </div>
+                <div class="shortcut-item">
+                    <span>Notificaciones</span>
+                    <kbd>Alt + N</kbd>
+                </div>
+                <div class="shortcut-item">
+                    <span>Configuración</span>
+                    <kbd>Alt + C</kbd>
+                </div>
+            </div>
+        </div>
+
+        <!-- Privacidad -->
+        <div class="settings-section">
+            <div class="section-title">
+                <i class="bi bi-shield-lock"></i> Privacidad
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Mostrar estado en línea</span>
+                    <span class="setting-description">Permite que otros vean si estás activo</span>
+                </div>
+                <div class="toggle-switch active" id="privacyToggle" onclick="togglePrivacy()"></div>
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Confirmar antes de eliminar</span>
+                    <span class="setting-description">Solicita confirmación al eliminar elementos</span>
+                </div>
+                <div class="toggle-switch active" id="confirmToggle" onclick="toggleConfirm()"></div>
+            </div>
+        </div>
+
+        <!-- Accesibilidad -->
+        <div class="settings-section">
+            <div class="section-title">
+                <i class="bi bi-universal-access"></i> Accesibilidad
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Reducir movimiento</span>
+                    <span class="setting-description">Disminuye las animaciones para mayor comodidad</span>
+                </div>
+                <div class="toggle-switch" id="motionToggle" onclick="toggleMotion()"></div>
+            </div>
+            <div class="setting-item">
+                <div>
+                    <span class="setting-label">Texto alternativo en imágenes</span>
+                    <span class="setting-description">Muestra descripciones para personas con discapacidad visual</span>
+                </div>
+                <div class="toggle-switch active" id="altTextToggle" onclick="toggleAltText()"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3">
+        <!-- Resumen y acciones -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <i class="bi bi-sliders"></i> Acciones
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-success" onclick="saveSettings()">
+                        <i class="bi bi-save"></i> Guardar configuración
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="resetSettings()">
+                        <i class="bi bi-arrow-counterclockwise"></i> Restablecer
+                    </button>
+                </div>
+                <hr>
+                <small class="text-muted d-block text-center">
+                    <i class="bi bi-info-circle"></i> Los cambios se guardan automáticamente en tu navegador
+                </small>
+            </div>
+        </div>
+
+        <!-- Información -->
+        <div class="card mt-3">
+            <div class="card-header bg-light">
+                <i class="bi bi-info-circle"></i> Información
+            </div>
+            <div class="card-body small">
+                <p><strong>Versión:</strong> 1.0.0</p>
+                <p><strong>Última actualización:</strong> {{ now.strftime('%d/%m/%Y') }}</p>
+                <p><strong>Preferencias guardadas:</strong> <span id="prefsStatus">Local</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================
+// CONFIGURACIÓN Y ACCESIBILIDAD
+// ============================================
+
+// Cargar preferencias guardadas
+document.addEventListener('DOMContentLoaded', function() {
+    loadPreferences();
+});
+
+function loadPreferences() {
+    const prefs = getPreferences();
+    
+    // Tema
+    if (prefs.theme) {
+        setTheme(prefs.theme, false);
+    }
+    
+    // Tamaño de letra
+    if (prefs.fontSize) {
+        document.documentElement.style.fontSize = prefs.fontSize + '%';
+        document.getElementById('fontSizeDisplay').textContent = prefs.fontSize + '%';
+    }
+    
+    // Color
+    if (prefs.color) {
+        document.querySelectorAll('.color-option').forEach(el => {
+            el.classList.toggle('active', el.dataset.color === prefs.color);
+        });
+        document.documentElement.style.setProperty('--rtp-green', prefs.color);
+    }
+    
+    // Toggles
+    if (prefs.contrast) {
+        document.getElementById('contrastToggle').classList.toggle('active', prefs.contrast);
+        applyContrast(prefs.contrast);
+    }
+    if (prefs.sound !== undefined) {
+        document.getElementById('soundToggle').classList.toggle('active', prefs.sound);
+    }
+    if (prefs.privacy !== undefined) {
+        document.getElementById('privacyToggle').classList.toggle('active', prefs.privacy);
+    }
+    if (prefs.confirm !== undefined) {
+        document.getElementById('confirmToggle').classList.toggle('active', prefs.confirm);
+    }
+    if (prefs.motion !== undefined) {
+        document.getElementById('motionToggle').classList.toggle('active', prefs.motion);
+    }
+    if (prefs.altText !== undefined) {
+        document.getElementById('altTextToggle').classList.toggle('active', prefs.altText);
+    }
+}
+
+function getPreferences() {
+    try {
+        const saved = localStorage.getItem('rtp_preferences');
+        return saved ? JSON.parse(saved) : {};
+    } catch {
+        return {};
+    }
+}
+
+function savePreferences(prefs) {
+    const current = getPreferences();
+    const updated = { ...current, ...prefs };
+    localStorage.setItem('rtp_preferences', JSON.stringify(updated));
+    document.getElementById('prefsStatus').textContent = 'Guardado';
+    setTimeout(() => {
+        document.getElementById('prefsStatus').textContent = 'Local';
+    }, 2000);
+}
+
+// ============================================
+// TEMA
+// ============================================
+function setTheme(theme, save = true) {
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.theme === theme);
+    });
+    
+    if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.body.style.background = '#1a1a2e';
+        document.body.style.color = '#e0e0e0';
+    } else if (theme === 'light') {
+        document.documentElement.removeAttribute('data-theme');
+        document.body.style.background = '';
+        document.body.style.color = '';
+    } else {
+        // Automático - usar preferencia del sistema
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.body.style.background = '#1a1a2e';
+            document.body.style.color = '#e0e0e0';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            document.body.style.background = '';
+            document.body.style.color = '';
+        }
+    }
+    
+    if (save) {
+        savePreferences({ theme });
+    }
+}
+
+// ============================================
+// TAMAÑO DE LETRA
+// ============================================
+function changeFontSize(delta) {
+    const current = parseInt(document.documentElement.style.fontSize) || 100;
+    const newSize = Math.min(Math.max(current + delta * 10, 70), 200);
+    document.documentElement.style.fontSize = newSize + '%';
+    document.getElementById('fontSizeDisplay').textContent = newSize + '%';
+    savePreferences({ fontSize: newSize });
+}
+
+function resetFontSize() {
+    document.documentElement.style.fontSize = '';
+    document.getElementById('fontSizeDisplay').textContent = '100%';
+    savePreferences({ fontSize: 100 });
+}
+
+// ============================================
+// COLORES
+// ============================================
+function setColor(color, save = true) {
+    document.querySelectorAll('.color-option').forEach(el => {
+        el.classList.toggle('active', el.dataset.color === color);
+    });
+    document.documentElement.style.setProperty('--rtp-green', color);
+    
+    // Actualizar botones y elementos que usan el color
+    document.querySelectorAll('.btn-success, .bg-success').forEach(el => {
+        if (el.tagName === 'BUTTON' && el.classList.contains('btn-success')) {
+            el.style.backgroundColor = color;
+            el.style.borderColor = color;
+        }
+    });
+    
+    if (save) {
+        savePreferences({ color });
+    }
+}
+
+function setCustomColor(color) {
+    setColor(color);
+}
+
+// ============================================
+// CONTRASTE
+// ============================================
+function toggleContrast() {
+    const toggle = document.getElementById('contrastToggle');
+    toggle.classList.toggle('active');
+    const enabled = toggle.classList.contains('active');
+    applyContrast(enabled);
+    savePreferences({ contrast: enabled });
+}
+
+function applyContrast(enabled) {
+    if (enabled) {
+        document.documentElement.style.setProperty('--text-color', '#000000');
+        document.documentElement.style.setProperty('--bg-color', '#ffffff');
+        document.body.style.filter = 'contrast(1.5)';
+        document.body.style.background = '#ffffff';
+        document.body.style.color = '#000000';
+    } else {
+        document.documentElement.style.removeProperty('--text-color');
+        document.documentElement.style.removeProperty('--bg-color');
+        document.body.style.filter = '';
+        document.body.style.background = '';
+        document.body.style.color = '';
+    }
+}
+
+// ============================================
+// SONIDOS
+// ============================================
+function toggleSound() {
+    const toggle = document.getElementById('soundToggle');
+    toggle.classList.toggle('active');
+    savePreferences({ sound: toggle.classList.contains('active') });
+    if (toggle.classList.contains('active')) {
+        playSound('pop');
+    }
+}
+
+function playSound(type) {
+    if (!document.getElementById('soundToggle').classList.contains('active')) return;
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = type === 'pop' ? 800 : 400;
+        gain.gain.value = 0.1;
+        osc.start();
+        osc.stop(ctx.currentTime + 0.1);
+    } catch {}
+}
+
+// ============================================
+// PRIVACIDAD
+// ============================================
+function togglePrivacy() {
+    const toggle = document.getElementById('privacyToggle');
+    toggle.classList.toggle('active');
+    savePreferences({ privacy: toggle.classList.contains('active') });
+}
+
+function toggleConfirm() {
+    const toggle = document.getElementById('confirmToggle');
+    toggle.classList.toggle('active');
+    savePreferences({ confirm: toggle.classList.contains('active') });
+}
+
+// ============================================
+// ACCESIBILIDAD
+// ============================================
+function toggleMotion() {
+    const toggle = document.getElementById('motionToggle');
+    toggle.classList.toggle('active');
+    savePreferences({ motion: toggle.classList.contains('active') });
+    if (toggle.classList.contains('active')) {
+        document.body.style.transition = 'none';
+        document.querySelectorAll('*').forEach(el => {
+            el.style.transition = 'none';
+            el.style.animation = 'none';
+        });
+    } else {
+        document.body.style.transition = '';
+        document.querySelectorAll('*').forEach(el => {
+            el.style.transition = '';
+            el.style.animation = '';
+        });
+    }
+}
+
+function toggleAltText() {
+    const toggle = document.getElementById('altTextToggle');
+    toggle.classList.toggle('active');
+    savePreferences({ altText: toggle.classList.contains('active') });
+    // Mostrar/ocultar textos alternativos en imágenes
+    document.querySelectorAll('img').forEach(img => {
+        if (toggle.classList.contains('active') && img.alt) {
+            const span = document.createElement('span');
+            span.className = 'alt-text';
+            span.textContent = '📷 ' + img.alt;
+            span.style.cssText = 'display:block;font-size:0.8rem;color:#6c757d;margin-top:2px;';
+            if (!img.parentNode.querySelector('.alt-text')) {
+                img.parentNode.insertBefore(span, img.nextSibling);
+            }
+        } else {
+            img.parentNode.querySelectorAll('.alt-text').forEach(el => el.remove());
+        }
+    });
+}
+
+// ============================================
+// GUARDAR Y RESTABLECER
+// ============================================
+function saveSettings() {
+    showToast('Configuración guardada correctamente', 'success');
+    // Forzar guardado de todas las preferencias actuales
+    const prefs = getPreferences();
+    savePreferences(prefs);
+}
+
+function resetSettings() {
+    if (!confirm('¿Estás seguro de que quieres restablecer todas las configuraciones a sus valores predeterminados?')) return;
+    
+    localStorage.removeItem('rtp_preferences');
+    location.reload();
+}
+
+// ============================================
+// TOAST NOTIFICATIONS
+// ============================================
+function showToast(message, type) {
+    const colors = {
+        success: '#28a745',
+        danger: '#dc3545',
+        warning: '#ffc107',
+        info: '#17a2b8'
+    };
+    const icons = {
+        success: 'check-circle',
+        danger: 'exclamation-triangle',
+        warning: 'exclamation-circle',
+        info: 'info-circle'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white border-0';
+    toast.style.backgroundColor = colors[type] || colors.info;
+    toast.style.position = 'fixed';
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.style.minWidth = '300px';
+    toast.style.boxShadow = '0 8px 25px rgba(0,0,0,0.2)';
+    toast.style.borderRadius = '10px';
+    toast.style.padding = '12px 16px';
+    toast.style.animation = 'slideDown 0.3s ease-in';
+    
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi bi-${icons[type] || 'info-circle'} me-2 fs-5"></i>
+            <span>${message}</span>
+            <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.5s';
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+    
+    toast.querySelector('.btn-close').addEventListener('click', function() {
+        toast.remove();
+    });
+}
+
+// ============================================
+// ATAJOS DE TECLADO
+// ============================================
+document.addEventListener('keydown', function(e) {
+    // Alt + D = Dashboard
+    if (e.altKey && e.key === 'd') {
+        e.preventDefault();
+        window.location.href = '{{ url_for("dashboard") }}';
+    }
+    // Alt + P = Parrilla
+    if (e.altKey && e.key === 'p') {
+        e.preventDefault();
+        window.location.href = '{{ url_for("publications") }}';
+    }
+    // Alt + N = Nueva publicación
+    if (e.altKey && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = '{{ url_for("new_publication") }}';
+    }
+    // Alt + M = Mensajes
+    if (e.altKey && e.key === 'm') {
+        e.preventDefault();
+        window.location.href = '{{ url_for("messages") }}';
+    }
+    // Alt + C = Configuración
+    if (e.altKey && e.key === 'c') {
+        e.preventDefault();
+        window.location.href = '{{ url_for("settings") }}';
+    }
+    // Ctrl + S = Guardar (en formularios)
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        const form = document.querySelector('form');
+        if (form) {
+            e.preventDefault();
+            form.submit();
+        }
+    }
+    // Ctrl + F = Buscar
+    if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        const searchInput = document.querySelector('input[name="search"]');
+        if (searchInput) {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    }
+});
+
+// ============================================
+// ESTILOS PARA MODO OSCURO
+// ============================================
+const darkStyles = document.createElement('style');
+darkStyles.textContent = `
+    [data-theme="dark"] {
+        --bg-color: #1a1a2e;
+        --text-color: #e0e0e0;
+        --card-bg: #16213e;
+        --border-color: #2d2d44;
+    }
+    [data-theme="dark"] body {
+        background: #1a1a2e;
+        color: #e0e0e0;
+    }
+    [data-theme="dark"] .card,
+    [data-theme="dark"] .form-section,
+    [data-theme="dark"] .settings-section {
+        background: #16213e;
+        border-color: #2d2d44;
+    }
+    [data-theme="dark"] .card-header,
+    [data-theme="dark"] .form-section .section-title {
+        color: #78BE20;
+        border-color: #2d2d44;
+    }
+    [data-theme="dark"] .table {
+        color: #e0e0e0;
+    }
+    [data-theme="dark"] .table thead th {
+        background: #0d1b2a;
+        color: #78BE20;
+    }
+    [data-theme="dark"] .table-hover tbody tr:hover {
+        background: #1a2a3a;
+    }
+    [data-theme="dark"] .form-control {
+        background: #0d1b2a;
+        border-color: #2d2d44;
+        color: #e0e0e0;
+    }
+    [data-theme="dark"] .form-control:focus {
+        border-color: #78BE20;
+        box-shadow: 0 0 0 0.2rem rgba(120, 190, 32, 0.25);
+    }
+    [data-theme="dark"] .navbar {
+        background: #0d1b2a !important;
+        border-bottom-color: #78BE20;
+    }
+    [data-theme="dark"] .footer {
+        background: #0d1b2a;
+        border-top-color: #2d2d44;
+        color: #888;
+    }
+    [data-theme="dark"] .stat-card {
+        background: #16213e;
+    }
+    [data-theme="dark"] .stat-card .stat-label {
+        color: #aaa;
+    }
+    [data-theme="dark"] .stat-card .stat-number {
+        color: #78BE20;
+    }
+    [data-theme="dark"] .dropdown-menu {
+        background: #16213e;
+        border-color: #2d2d44;
+    }
+    [data-theme="dark"] .dropdown-item {
+        color: #e0e0e0;
+    }
+    [data-theme="dark"] .dropdown-item:hover {
+        background: #1a2a3a;
+        color: #78BE20;
+    }
+    [data-theme="dark"] .border {
+        border-color: #2d2d44 !important;
+    }
+    [data-theme="dark"] .bg-light {
+        background: #0d1b2a !important;
+    }
+    [data-theme="dark"] .text-muted {
+        color: #888 !important;
+    }
+    [data-theme="dark"] .alert-info {
+        background: #0d1b2a;
+        border-color: #78BE20;
+        color: #78BE20;
+    }
+`;
+document.head.appendChild(darkStyles);
+</script>
+{% endblock %}

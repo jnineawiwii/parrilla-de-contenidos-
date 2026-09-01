@@ -32,7 +32,7 @@
                         <td>{{ user.full_name }}</td>
                         <td>{{ user.email }}</td>
                         <td>
-                            <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'supervisor' %}bg-warning{% elif user.role == 'editor' %}bg-info{% elif user.role == 'designer' %}bg-primary{% elif user.role == 'photographer' %}bg-success{% else %}bg-secondary{% endif %}">
+                            <span class="badge {% if user.role == 'admin' %}bg-danger{% elif user.role == 'editor' %}bg-info{% elif user.role == 'consultor' %}bg-secondary{% else %}bg-dark{% endif %}">
                                 {{ user.role|capitalize }}
                             </span>
                         </td>

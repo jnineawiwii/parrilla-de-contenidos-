@@ -7,7 +7,7 @@ load_dotenv()
 
 def fix_campaigns():
     try:
-        conn = psycopg2.connect(os.getenv('DATABASE_URL', 'postgresql://postgres:123456@localhost:5432/rtp_parrilla'))
+        conn = psycopg2.connect(os.getenv('DATABASE_URL', 'postgresql://postgres:janine123@localhost:5433/rtp_parrilla'))
         cur = conn.cursor()
         
         print("🔍 Verificando tabla campaigns...")
