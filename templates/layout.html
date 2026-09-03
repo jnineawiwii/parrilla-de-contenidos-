@@ -12,94 +12,535 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        /* ============================================
+           PANEL DE CONFIGURACIÓN EN DROPDOWN
+           ============================================ */
+        
+        .settings-dropdown {
+            background: #1a1a2e;
+            border: 1px solid #2d2d44;
+            border-radius: 12px;
+            padding: 16px !important;
+            min-width: 320px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        
+        .settings-dropdown .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 10px;
+        }
+        
+        .settings-dropdown .settings-header i {
+            color: var(--rtp-green, #28a745);
+        }
+        
+        .settings-dropdown .settings-auto-save {
+            font-size: 0.6rem;
+            color: rgba(255,255,255,0.3);
+            font-weight: 300;
+            background: rgba(255,255,255,0.05);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        
+        .settings-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+        }
+        
+        .setting-label {
+            font-size: 0.82rem;
+            color: rgba(255,255,255,0.7);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .setting-label i {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.4);
+        }
+        
+        /* Tema - Botones */
+        .theme-buttons {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .theme-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .theme-btn:hover {
+            background: rgba(255,255,255,0.18);
+            transform: scale(1.05);
+        }
+        
+        .theme-btn.active {
+            border-color: var(--rtp-green, #28a745);
+            background: rgba(40, 167, 69, 0.25);
+        }
+        
+        /* Tamaño de letra */
+        .font-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .font-controls button {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .font-controls button:hover {
+            background: rgba(40, 167, 69, 0.25);
+            border-color: var(--rtp-green, #28a745);
+        }
+        
+        .font-size-display {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.6);
+            min-width: 36px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            width: 38px;
+            height: 20px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s;
+            flex-shrink: 0;
+        }
+        
+        .toggle-switch.active {
+            background: var(--rtp-green, #28a745);
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            transform: translateX(18px);
+        }
+        
+        /* Color Picker Mini */
+        .color-picker-mini {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .color-picker-mini .color-option {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+        
+        .color-picker-mini .color-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .color-picker-mini .color-option.active {
+            border-color: white;
+            box-shadow: 0 0 0 2px var(--rtp-green, #28a745);
+        }
+        
+        .color-picker-mini input[type="color"] {
+            width: 22px;
+            height: 22px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 50%;
+            padding: 0;
+            cursor: pointer;
+            background: transparent;
+        }
+        
+        .color-picker-mini input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        
+        .color-picker-mini input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+        
+        /* Botón Restablecer */
+        .btn-reset-settings {
+            width: 100%;
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.03);
+            color: rgba(255,255,255,0.4);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-reset-settings:hover {
+            background: rgba(220, 53, 69, 0.15);
+            border-color: #dc3545;
+            color: #ff6b6b;
+        }
+        
+        /* ============================================
+           TOAST NOTIFICATIONS
+           ============================================ */
+        .toast-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            z-index: 9999;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideUp 0.3s ease-out;
+            max-width: 300px;
+            font-weight: 500;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* ============================================
+           MODO OSCURO - Ajustes adicionales
+           ============================================ */
+        [data-theme="dark"] .settings-dropdown {
+            background: #1a1a2e;
+            border-color: #2d2d44;
+        }
+        
+        [data-theme="dark"] .settings-dropdown .setting-label {
+            color: rgba(255,255,255,0.6);
+        }
+        
+        /* Modo claro para el dropdown */
+        body:not([data-theme="dark"]) .settings-dropdown {
+            background: #ffffff;
+            border-color: #e0e0e0;
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .settings-header {
+            color: #2D2A26;
+            border-bottom-color: #e8e8e8;
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .setting-label {
+            color: rgba(0,0,0,0.7);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .setting-label i {
+            color: rgba(0,0,0,0.3);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .theme-btn {
+            background: rgba(0,0,0,0.05);
+            color: #333;
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .theme-btn:hover {
+            background: rgba(0,0,0,0.1);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .theme-btn.active {
+            border-color: var(--rtp-green, #28a745);
+            background: rgba(40, 167, 69, 0.15);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .font-controls button {
+            background: rgba(0,0,0,0.05);
+            color: #333;
+            border-color: rgba(0,0,0,0.1);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .font-controls button:hover {
+            background: rgba(40, 167, 69, 0.15);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .font-size-display {
+            color: rgba(0,0,0,0.6);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .toggle-switch {
+            background: rgba(0,0,0,0.15);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .toggle-switch.active {
+            background: var(--rtp-green, #28a745);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .color-picker-mini input[type="color"] {
+            border-color: rgba(0,0,0,0.1);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .btn-reset-settings {
+            color: rgba(0,0,0,0.3);
+            border-color: rgba(0,0,0,0.08);
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .btn-reset-settings:hover {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+        
+        body:not([data-theme="dark"]) .settings-dropdown .settings-auto-save {
+            color: rgba(0,0,0,0.25);
+            background: rgba(0,0,0,0.04);
+        }
+        
+        /* ============================================
+           RESPONSIVE
+           ============================================ */
+        @media (max-width: 768px) {
+            .settings-dropdown {
+                min-width: 280px;
+                padding: 12px !important;
+                right: -60px;
+            }
+            
+            .setting-row {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            
+            .color-picker-mini {
+                gap: 3px;
+            }
+            
+            .color-picker-mini .color-option {
+                width: 20px;
+                height: 20px;
+            }
+            
+            .color-picker-mini input[type="color"] {
+                width: 20px;
+                height: 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .settings-dropdown {
+                min-width: 250px;
+                right: -80px;
+            }
+        }
+    </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     {% if current_user.is_authenticated %}
     <!-- Navbar -->
-   <nav class="navbar navbar-expand-lg">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="{{ url_for('dashboard') }}">
-            <img src="{{ url_for('static', filename='images/logo_inicio.jpg') }}" 
-                 alt="Red de Transporte de Pasajeros" 
-                 height="45"
-                 style="margin-right: 10px;">
-            <span style="font-weight: 700; font-size: 1.2rem;">RTP</span>
-            <span style="font-weight: 300; font-size: 1rem; color: rgba(255,255,255,0.7);">Parrilla de Contenidos</span>
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarMain">
-            <ul class="navbar-nav me-auto">
-                {% if current_user.is_admin() %}
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                        <i class="bi bi-speedometer2"></i> Dashboard
-                    </a>
-                </li>
-                {% endif %}
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'publications' %}active{% endif %}" href="{{ url_for('publications') }}">
-                        <i class="bi bi-calendar2-week"></i> Parrilla
-                    </a>
-                </li>
-                {% if current_user.is_admin() %}
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'campaigns' %}active{% endif %}" href="{{ url_for('campaigns') }}">
-                        <i class="bi bi-tags"></i> Campañas
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">
-                        <i class="bi bi-graph-up"></i> Analíticas
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'users' %}active{% endif %}" href="{{ url_for('users') }}">
-                        <i class="bi bi-people"></i> Usuarios
-                    </a>
-                </li>
-                {% endif %}
-                {% if current_user.can_access_messages() %}
-                <li class="nav-item">
-                    <a class="nav-link {% if request.endpoint == 'messages' or request.endpoint == 'conversation' %}active{% endif %}" href="{{ url_for('messages') }}">
-                        <i class="bi bi-envelope"></i> Mensajes
-                        <span class="badge" id="msgBadge" style="display: none; background-color: #9F2241;">0</span>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-            <ul class="navbar-nav">
-                {% if current_user.can_access_notifications() %}
-                <li class="nav-item">
-                    <a class="nav-link position-relative" href="{{ url_for('notifications') }}" id="notifLink">
-                        <i class="bi bi-bell fs-5"></i>
-                        <span class="badge position-absolute top-0 start-100 translate-middle" id="notifBadge" style="display: none; background-color: #9F2241; font-size: 0.6rem;">
-                            0
-                        </span>
-                    </a>
-                </li>
-                {% endif %}
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle"></i> {{ current_user.full_name }}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('settings') }}">
-    <i class="bi bi-gear"></i> Configuración
-</a></li>
-                        <li><span class="dropdown-item-text text-muted small">Rol: {{ current_user.role|capitalize }}</span></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right text-danger"></i> Cerrar Sesión</a></li>
-                    </ul>
-                </li>
-            </ul>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <img src="{{ url_for('static', filename='images/logo_inicio.jpg') }}" 
+                     alt="Red de Transporte de Pasajeros" 
+                     height="45"
+                     style="margin-right: 10px;">
+                <span style="font-weight: 700; font-size: 1.2rem;">RTP</span>
+                <span style="font-weight: 300; font-size: 1rem; color: rgba(255,255,255,0.7);">Parrilla de Contenidos</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMain">
+                <ul class="navbar-nav me-auto">
+                    {% if current_user.is_admin() %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'publications' %}active{% endif %}" href="{{ url_for('publications') }}">
+                            <i class="bi bi-calendar2-week"></i> Parrilla
+                        </a>
+                    </li>
+                    {% if current_user.is_admin() %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'campaigns' %}active{% endif %}" href="{{ url_for('campaigns') }}">
+                            <i class="bi bi-tags"></i> Campañas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">
+                            <i class="bi bi-graph-up"></i> Analíticas
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'users' %}active{% endif %}" href="{{ url_for('users') }}">
+                            <i class="bi bi-people"></i> Usuarios
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.can_access_messages() %}
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'messages' or request.endpoint == 'conversation' %}active{% endif %}" href="{{ url_for('messages') }}">
+                            <i class="bi bi-envelope"></i> Mensajes
+                            <span class="badge" id="msgBadge" style="display: none; background-color: #9F2241;">0</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    {% if current_user.can_access_notifications() %}
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{{ url_for('notifications') }}" id="notifLink">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span class="badge position-absolute top-0 start-100 translate-middle" id="notifBadge" style="display: none; background-color: #9F2241; font-size: 0.6rem;">
+                                0
+                            </span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    <!-- Dropdown de Configuración Rápida -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Configuración rápida">
+                            <i class="bi bi-sliders2 fs-5"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end settings-dropdown">
+                            <li>
+                                <div class="settings-panel">
+                                    <div class="settings-header">
+                                        <span><i class="bi bi-gear-fill"></i> Configuración Rápida</span>
+                                        <span class="settings-auto-save">Auto-guardado</span>
+                                    </div>
+                                    
+                                    <!-- Tema -->
+                                    <div class="setting-row">
+                                        <span class="setting-label"><i class="bi bi-palette"></i> Tema</span>
+                                        <div class="theme-buttons">
+                                            <button class="theme-btn active" data-theme="light" onclick="setTheme('light')" title="Claro">☀️</button>
+                                            <button class="theme-btn" data-theme="dark" onclick="setTheme('dark')" title="Oscuro">🌙</button>
+                                            <button class="theme-btn" data-theme="auto" onclick="setTheme('auto')" title="Automático">🔄</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tamaño de letra -->
+                                    <div class="setting-row">
+                                        <span class="setting-label"><i class="bi bi-fonts"></i> Tamaño</span>
+                                        <div class="font-controls">
+                                            <button onclick="changeFontSize(-1)" title="Reducir">A-</button>
+                                            <span class="font-size-display" id="fontSizeDisplay">100%</span>
+                                            <button onclick="changeFontSize(1)" title="Aumentar">A+</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Contraste -->
+                                    <div class="setting-row">
+                                        <span class="setting-label"><i class="bi bi-contrast"></i> Alto contraste</span>
+                                        <div class="toggle-switch" id="contrastToggle" onclick="toggleContrast()"></div>
+                                    </div>
+
+                                    <!-- Colores -->
+                                    <div class="setting-row">
+                                        <span class="setting-label"><i class="bi bi-eyedropper"></i> Color</span>
+                                        <div class="color-picker-mini">
+                                            <div class="color-option active" style="background: #28a745;" data-color="#28a745" onclick="setColor('#28a745')"></div>
+                                            <div class="color-option" style="background: #9F2241;" data-color="#9F2241" onclick="setColor('#9F2241')"></div>
+                                            <div class="color-option" style="background: #007bff;" data-color="#007bff" onclick="setColor('#007bff')"></div>
+                                            <div class="color-option" style="background: #6f42c1;" data-color="#6f42c1" onclick="setColor('#6f42c1')"></div>
+                                            <div class="color-option" style="background: #fd7e14;" data-color="#fd7e14" onclick="setColor('#fd7e14')"></div>
+                                            <div class="color-option" style="background: #20c997;" data-color="#20c997" onclick="setColor('#20c997')"></div>
+                                            <input type="color" id="customColorPicker" onchange="setCustomColor(this.value)" title="Color personalizado">
+                                        </div>
+                                    </div>
+
+                                    <!-- Botón restablecer -->
+                                    <button class="btn-reset-settings" onclick="resetSettings()">
+                                        <i class="bi bi-arrow-counterclockwise"></i> Restablecer configuración
+                                    </button>
+                                </div>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ current_user.full_name }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="{{ url_for('settings') }}">
+                                
+                            </a></li>
+                            <li><span class="dropdown-item-text text-muted small">Rol: {{ current_user.role|capitalize }}</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}"><i class="bi bi-box-arrow-right text-danger"></i> Cerrar Sesión</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
     {% endif %}
-   
 
     <!-- Flash Messages -->
     <div class="container mt-3">
@@ -133,53 +574,398 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Notificaciones en tiempo real -->
+    <!-- ============================================
+         CONFIGURACIÓN - JAVASCRIPT COMPLETO
+         ============================================ -->
     <script>
+        // ============================================
+        // PREFERENCIAS - Guardar y Cargar
+        // ============================================
+        
+        function getPreferences() {
+            try {
+                const saved = localStorage.getItem('rtp_preferences');
+                return saved ? JSON.parse(saved) : {};
+            } catch {
+                return {};
+            }
+        }
+
+        function savePreferences(prefs) {
+            const current = getPreferences();
+            const updated = { ...current, ...prefs };
+            localStorage.setItem('rtp_preferences', JSON.stringify(updated));
+        }
+
+        // ============================================
+        // CARGAR PREFERENCIAS AL INICIAR
+        // ============================================
+        
         document.addEventListener('DOMContentLoaded', function() {
-            function updateNotificationCount() {
-                fetch('{{ url_for("get_unread_notifications_count") }}')
-                    .then(response => response.json())
-                    .then(data => {
-                        const badge = document.getElementById('notifBadge');
+            const prefs = getPreferences();
+            
+            // Tema
+            if (prefs.theme) {
+                setTheme(prefs.theme, false);
+            }
+            
+            // Tamaño de letra
+            if (prefs.fontSize) {
+                document.documentElement.style.fontSize = prefs.fontSize + '%';
+                const display = document.getElementById('fontSizeDisplay');
+                if (display) display.textContent = prefs.fontSize + '%';
+            }
+            
+            // Color
+            if (prefs.color) {
+                document.querySelectorAll('.color-option').forEach(el => {
+                    el.classList.toggle('active', el.dataset.color === prefs.color);
+                });
+                document.documentElement.style.setProperty('--rtp-green', prefs.color);
+                // Actualizar botones
+                updateColorElements(prefs.color);
+            }
+            
+            // Contraste
+            if (prefs.contrast) {
+                const toggle = document.getElementById('contrastToggle');
+                if (toggle) {
+                    toggle.classList.toggle('active', prefs.contrast);
+                    applyContrast(prefs.contrast);
+                }
+            }
+            
+            // Actualizar notificaciones
+            updateNotificationCount();
+            updateMessageCount();
+            
+            // Actualizar cada 30 segundos
+            setInterval(updateNotificationCount, 30000);
+            setInterval(updateMessageCount, 30000);
+        });
+
+        // ============================================
+        // TEMA
+        // ============================================
+        
+        function setTheme(theme, save = true) {
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === theme);
+            });
+            
+            const body = document.body;
+            const html = document.documentElement;
+            
+            if (theme === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+                body.style.background = '#1a1a2e';
+                body.style.color = '#e0e0e0';
+                // Ajustar navbar
+                const navbar = document.querySelector('.navbar');
+                if (navbar) {
+                    navbar.style.background = '#0d1b2a';
+                    navbar.style.borderBottom = '1px solid #2d2d44';
+                }
+                // Ajustar footer
+                const footer = document.querySelector('.footer');
+                if (footer) {
+                    footer.style.background = '#0d1b2a';
+                    footer.style.borderTop = '1px solid #2d2d44';
+                    footer.style.color = '#888';
+                }
+            } else if (theme === 'light') {
+                html.removeAttribute('data-theme');
+                body.style.background = '';
+                body.style.color = '';
+                const navbar = document.querySelector('.navbar');
+                if (navbar) {
+                    navbar.style.background = '';
+                    navbar.style.borderBottom = '';
+                }
+                const footer = document.querySelector('.footer');
+                if (footer) {
+                    footer.style.background = '';
+                    footer.style.borderTop = '';
+                    footer.style.color = '';
+                }
+            } else {
+                // Automático
+                if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    html.setAttribute('data-theme', 'dark');
+                    body.style.background = '#1a1a2e';
+                    body.style.color = '#e0e0e0';
+                } else {
+                    html.removeAttribute('data-theme');
+                    body.style.background = '';
+                    body.style.color = '';
+                }
+            }
+            
+            if (save) {
+                savePreferences({ theme });
+                showToast('Tema: ' + theme, 'info');
+            }
+        }
+
+        // ============================================
+        // TAMAÑO DE LETRA
+        // ============================================
+        
+        function changeFontSize(delta) {
+            const current = parseInt(document.documentElement.style.fontSize) || 100;
+            const newSize = Math.min(Math.max(current + delta * 10, 70), 200);
+            document.documentElement.style.fontSize = newSize + '%';
+            const display = document.getElementById('fontSizeDisplay');
+            if (display) display.textContent = newSize + '%';
+            savePreferences({ fontSize: newSize });
+        }
+
+        // ============================================
+        // COLORES
+        // ============================================
+        
+        function setColor(color, save = true) {
+            document.querySelectorAll('.color-option').forEach(el => {
+                el.classList.toggle('active', el.dataset.color === color);
+            });
+            document.documentElement.style.setProperty('--rtp-green', color);
+            
+            updateColorElements(color);
+            
+            if (save) {
+                savePreferences({ color });
+                showToast('Color actualizado', 'success');
+            }
+        }
+
+        function updateColorElements(color) {
+            // Actualizar botones y elementos que usan el color
+            document.querySelectorAll('.btn-success, .bg-success, .btn-outline-success').forEach(el => {
+                if (el.tagName === 'BUTTON' && el.classList.contains('btn-success')) {
+                    el.style.backgroundColor = color;
+                    el.style.borderColor = color;
+                }
+                if (el.classList.contains('btn-outline-success')) {
+                    el.style.borderColor = color;
+                    el.style.color = color;
+                }
+                if (el.classList.contains('bg-success')) {
+                    el.style.backgroundColor = color;
+                }
+            });
+            
+            // Actualizar toggles
+            document.querySelectorAll('.toggle-switch.active').forEach(el => {
+                el.style.background = color;
+            });
+        }
+
+        function setCustomColor(color) {
+            setColor(color);
+        }
+
+        // ============================================
+        // CONTRASTE
+        // ============================================
+        
+        function toggleContrast() {
+            const toggle = document.getElementById('contrastToggle');
+            if (!toggle) return;
+            toggle.classList.toggle('active');
+            const enabled = toggle.classList.contains('active');
+            applyContrast(enabled);
+            savePreferences({ contrast: enabled });
+            showToast(enabled ? 'Alto contraste activado' : 'Alto contraste desactivado', 'info');
+        }
+
+        function applyContrast(enabled) {
+            if (enabled) {
+                document.body.style.filter = 'contrast(1.5)';
+                document.body.style.background = '#ffffff';
+                document.body.style.color = '#000000';
+                document.documentElement.style.setProperty('--text-color', '#000000');
+                document.documentElement.style.setProperty('--bg-color', '#ffffff');
+            } else {
+                document.body.style.filter = '';
+                document.body.style.background = '';
+                document.body.style.color = '';
+                document.documentElement.style.removeProperty('--text-color');
+                document.documentElement.style.removeProperty('--bg-color');
+            }
+        }
+
+        // ============================================
+        // RESTABLECER CONFIGURACIÓN
+        // ============================================
+        
+        function resetSettings() {
+            if (!confirm('¿Restablecer todas las configuraciones a valores predeterminados?')) return;
+            
+            localStorage.removeItem('rtp_preferences');
+            
+            // Resetear tema
+            document.documentElement.removeAttribute('data-theme');
+            document.body.style.background = '';
+            document.body.style.color = '';
+            document.body.style.filter = '';
+            document.documentElement.style.fontSize = '';
+            document.documentElement.style.removeProperty('--rtp-green');
+            document.documentElement.style.removeProperty('--text-color');
+            document.documentElement.style.removeProperty('--bg-color');
+            
+            // Resetear navbar y footer
+            const navbar = document.querySelector('.navbar');
+            if (navbar) {
+                navbar.style.background = '';
+                navbar.style.borderBottom = '';
+            }
+            const footer = document.querySelector('.footer');
+            if (footer) {
+                footer.style.background = '';
+                footer.style.borderTop = '';
+                footer.style.color = '';
+            }
+            
+            // Resetear toggles
+            document.querySelectorAll('.toggle-switch').forEach(t => t.classList.remove('active'));
+            
+            // Resetear tema a claro
+            document.querySelectorAll('.theme-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.theme === 'light');
+            });
+            
+            // Resetear color
+            document.querySelectorAll('.color-option').forEach(el => {
+                el.classList.toggle('active', el.dataset.color === '#28a745');
+            });
+            document.documentElement.style.setProperty('--rtp-green', '#28a745');
+            
+            // Resetear tamaño
+            const display = document.getElementById('fontSizeDisplay');
+            if (display) display.textContent = '100%';
+            
+            // Resetear elementos de color
+            updateColorElements('#28a745');
+            
+            showToast('Configuración restablecida', 'warning');
+        }
+
+        // ============================================
+        // TOAST NOTIFICACIONES
+        // ============================================
+        
+        function showToast(message, type = 'info') {
+            const colors = {
+                success: '#28a745',
+                danger: '#dc3545',
+                warning: '#ffc107',
+                info: '#17a2b8'
+            };
+            const icons = {
+                success: 'check-circle',
+                danger: 'exclamation-triangle',
+                warning: 'exclamation-circle',
+                info: 'info-circle'
+            };
+            
+            // Eliminar toasts existentes
+            document.querySelectorAll('.toast-notification').forEach(t => t.remove());
+            
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.style.cssText = `
+                background: ${colors[type] || '#17a2b8'};
+                color: white;
+            `;
+            
+            toast.innerHTML = `
+                <i class="bi bi-${icons[type] || 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s';
+                setTimeout(() => toast.remove(), 500);
+            }, 2500);
+        }
+
+        // ============================================
+        // NOTIFICACIONES Y MENSAJES
+        // ============================================
+        
+        function updateNotificationCount() {
+            fetch('{{ url_for("get_unread_notifications_count") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('notifBadge');
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 9 ? '9+' : data.count;
+                        badge.style.display = 'inline';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                })
+                .catch(err => console.log('Error al obtener notificaciones:', err));
+        }
+
+        function updateMessageCount() {
+            fetch('{{ url_for("get_unread_messages_count") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('msgBadge');
+                    if (badge) {
                         if (data.count > 0) {
                             badge.textContent = data.count > 9 ? '9+' : data.count;
                             badge.style.display = 'inline';
                         } else {
                             badge.style.display = 'none';
                         }
-                    })
-                    .catch(err => console.log('Error al obtener notificaciones:', err));
-            }
-            
-            // Actualizar cada 30 segundos
-            updateNotificationCount();
-            setInterval(updateNotificationCount, 30000);
-        });
-         {% block extra_js %}{% endblock %}
-    // Actualizar contador de mensajes no leídos
-function updateMessageCount() {
-    fetch('{{ url_for("get_unread_messages_count") }}')
-        .then(response => response.json())
-        .then(data => {
-            const badge = document.getElementById('msgBadge');
-            if (badge) {
-                if (data.count > 0) {
-                    badge.textContent = data.count > 9 ? '9+' : data.count;
-                    badge.style.display = 'inline';
-                } else {
-                    badge.style.display = 'none';
+                    }
+                })
+                .catch(err => console.log('Error al obtener mensajes:', err));
+        }
+
+        // ============================================
+        // ATAJOS DE TECLADO
+        // ============================================
+        
+        document.addEventListener('keydown', function(e) {
+            // Ctrl + , para abrir configuración
+            if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+                e.preventDefault();
+                const dropdown = document.querySelector('.settings-dropdown');
+                if (dropdown) {
+                    const parent = dropdown.closest('.dropdown');
+                    if (parent) {
+                        const toggle = parent.querySelector('[data-bs-toggle="dropdown"]');
+                        if (toggle) {
+                            const bsDropdown = bootstrap.Dropdown.getInstance(toggle);
+                            if (bsDropdown) {
+                                bsDropdown.toggle();
+                            }
+                        }
+                    }
                 }
             }
-        })
-        .catch(err => console.log('Error al obtener mensajes:', err));
-}
+        });
 
-// Actualizar cada 30 segundos
-updateMessageCount();
-setInterval(updateMessageCount, 30000);
+        // ============================================
+        // DETECTAR CAMBIO DE TEMA DEL SISTEMA
+        // ============================================
+        
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                const prefs = getPreferences();
+                if (prefs.theme === 'auto') {
+                    setTheme('auto', false);
+                }
+            });
+        }
     </script>
     
-   
+    {% block extra_js %}{% endblock %}
 </body>
-
 </html>
