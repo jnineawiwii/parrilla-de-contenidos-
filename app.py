@@ -9,7 +9,7 @@ import re
 import requests
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-
+import pytz
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -19,7 +19,7 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import func, extract, and_, or_, text
 
 load_dotenv()
-
+MEXICO_TZ = pytz.timezone('America/Mexico_City')
 # Configuración de la aplicación
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-rtp-2025')
@@ -411,7 +411,7 @@ class AuditLog(db.Model):
 def settings():
     """Página de configuración y accesibilidad"""
     return render_template('settings.html', now=datetime.now())
-
+    
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -610,6 +610,7 @@ def index():
 
 
 @app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('dashboard'))
@@ -627,7 +628,10 @@ def login():
         
         if user and user.check_password(password):
             login_user(user, remember=bool(remember))
-            user.last_login = datetime.utcnow()
+            # CAMBIA ESTA LÍNEA:
+            # user.last_login = datetime.utcnow()
+            # POR ESTA:
+            user.last_login = datetime.now(MEXICO_TZ)  # <--- Usa la zona horaria de México
             db.session.commit()
             
             next_page = request.args.get('next')
@@ -640,7 +644,6 @@ def login():
             flash('Usuario o contraseña incorrectos.', 'danger')
     
     return render_template('login.html')
-
 
 @app.route('/logout')
 @login_required
